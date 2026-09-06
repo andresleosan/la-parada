@@ -28,7 +28,8 @@ export function ItemProducto({
   disabled = false,
 }: ItemProductoProps) {
   const colorClass = getProductColorClass(nombre);
-  const resolvedImageUrl = getGourmetImage(nombre, imagenUrl);
+  // Tarjeta pequeña del POS: la variante de 480px basta y pesa un tercio.
+  const resolvedImageUrl = getGourmetImage(nombre, imagenUrl, 480);
   
   return (
     <div

@@ -57,7 +57,10 @@ import {
   getStorefrontCartLimitReason,
   type StorefrontCartLimitReason,
 } from '@/utils/storefrontCartLimits';
-import { getGourmetImage } from '@/utils/productImages';
+import { GOURMET_CARD_SIZES, getGourmetImage, getGourmetImageSrcSet } from '@/utils/productImages';
+
+// React 18 no reconoce `fetchPriority`; el atributo en minúsculas llega al DOM sin advertencias.
+const HERO_IMAGE_PRIORITY = { fetchpriority: 'high' } as object;
 
 // Determina el tipo de plato y estilo para placeholders gastronómicos elegantes
 function getCategoryTag(nombre: string): { label: string; tagColor: string } {
@@ -685,11 +688,14 @@ export function LandingTiendaPage() {
                   {itemActivoDestacado.imagenUrl ? (
                     <img
                       src={itemActivoDestacado.imagenUrl}
+                      srcSet={getGourmetImageSrcSet(itemActivoDestacado.imagenUrl)}
+                      sizes="384px"
                       alt={itemActivoDestacado.nombre}
                       width="384"
                       height="224"
                       loading="eager"
                       decoding="async"
+                      {...HERO_IMAGE_PRIORITY}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
                     />
                   ) : (
@@ -891,6 +897,8 @@ export function LandingTiendaPage() {
                       <div className="h-44 rounded-2xl overflow-hidden mb-4 bg-neutral-950">
                         <img
                           src={combo.imagenUrl}
+                          srcSet={getGourmetImageSrcSet(combo.imagenUrl)}
+                          sizes={GOURMET_CARD_SIZES}
                           alt={combo.nombre}
                           width="640"
                           height="352"
@@ -993,8 +1001,10 @@ export function LandingTiendaPage() {
             </div>
           ) : productosFiltrados.length > 0 ? (
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-              {productosFiltrados.map((producto) => {
+              {productosFiltrados.map((producto, index) => {
                 const catTag = getCategoryTag(producto.nombre);
+                // Las dos primeras tarjetas suelen estar en el primer viewport móvil.
+                const imageLoading = index < 2 ? 'eager' : 'lazy';
                 const imagenAMostrar =
                   getGourmetImage(producto.nombre, producto.imagenUrl) ||
                   categoriasDB.find(
@@ -1012,10 +1022,12 @@ export function LandingTiendaPage() {
                         <div className="relative mb-4 h-48 overflow-hidden rounded-2xl bg-neutral-950">
                           <img
                             src={imagenAMostrar}
+                            srcSet={getGourmetImageSrcSet(imagenAMostrar)}
+                            sizes={GOURMET_CARD_SIZES}
                             alt={producto.nombre}
                             width="320"
                             height="288"
-                            loading="lazy"
+                            loading={imageLoading}
                             decoding="async"
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
                           />

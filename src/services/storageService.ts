@@ -19,70 +19,97 @@ import { v4 as uuidv4 } from 'uuid';
  */
 
 const STORAGE_BUCKET = 'productos';
-const MAX_WIDTH = 800; // Ancho óptimo para cards de producto
-const JPEG_QUALITY = 0.75; // Calidad JPEG balanceada y ligera
+const MAX_WIDTH = 960; // Coincide con la variante grande de las fotos gourmet locales
+const WEBP_QUALITY = 0.8; // WebP pesa ~30 % menos que JPEG a calidad visual equivalente
+const JPEG_QUALITY = 0.78; // Fallback para navegadores que no codifican WebP (Safari)
 const UPLOAD_TIMEOUT_MS = 20_000;
 
+type ImagenComprimidaMime = 'image/webp' | 'image/jpeg';
+
+export interface ImagenComprimida {
+  blob: Blob;
+  mimeType: ImagenComprimidaMime;
+  extension: 'webp' | 'jpg';
+  width: number;
+  height: number;
+}
+
 /**
- * Comprime una imagen usando Canvas y retorna Blob + DataUrl
+ * Carga un Blob como imagen decodificada usando un object URL
+ * (evita duplicar la foto en memoria como DataURL base64).
  */
-export async function comprimirImagen(file: Blob | File): Promise<{ blob: Blob; dataUrl: string }> {
+export function cargarImagenDesdeBlob(file: Blob): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
-    const reader = new FileReader();
+    const objectUrl = URL.createObjectURL(file);
+    const img = new Image();
 
-    reader.onload = (event) => {
-      const img = new Image();
-
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        let width = img.width;
-        let height = img.height;
-
-        // Redimensionar si supera MAX_WIDTH
-        if (width > MAX_WIDTH) {
-          height = Math.round((height * MAX_WIDTH) / width);
-          width = MAX_WIDTH;
-        }
-
-        canvas.width = width;
-        canvas.height = height;
-
-        const ctx = canvas.getContext('2d');
-        if (!ctx) {
-          reject(new Error('No se pudo obtener contexto de canvas'));
-          return;
-        }
-
-        ctx.drawImage(img, 0, 0, width, height);
-
-        const dataUrl = canvas.toDataURL('image/jpeg', JPEG_QUALITY);
-
-        canvas.toBlob(
-          (blob) => {
-            if (blob) {
-              resolve({ blob, dataUrl });
-            } else {
-              resolve({ blob: file, dataUrl });
-            }
-          },
-          'image/jpeg',
-          JPEG_QUALITY
-        );
-      };
-
-      img.onerror = () => {
-        reject(new Error('No se pudo cargar la imagen'));
-      };
-
-      img.src = event.target?.result as string;
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      resolve(img);
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error('No se pudo cargar la imagen'));
     };
 
-    reader.onerror = () => {
-      reject(new Error('Error al leer el archivo'));
-    };
-
-    reader.readAsDataURL(file);
+    img.src = objectUrl;
   });
+}
+
+function canvasToBlob(canvas: HTMLCanvasElement, mimeType: string, quality: number): Promise<Blob | null> {
+  return new Promise((resolve) => {
+    canvas.toBlob((blob) => resolve(blob), mimeType, quality);
+  });
+}
+
+/**
+ * Redibuja una imagen en un canvas limitando su lado mayor a `maxSize`.
+ * Devuelve `null` si el canvas no está disponible.
+ */
+export function dibujarEnCanvasReducido(
+  img: HTMLImageElement,
+  maxSize: number
+): HTMLCanvasElement | null {
+  const sourceWidth = img.naturalWidth || img.width;
+  const sourceHeight = img.naturalHeight || img.height;
+  const scale = Math.min(1, maxSize / Math.max(sourceWidth, sourceHeight));
+  const width = Math.max(1, Math.round(sourceWidth * scale));
+  const height = Math.max(1, Math.round(sourceHeight * scale));
+
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return null;
+
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(img, 0, 0, width, height);
+  return canvas;
+}
+
+/**
+ * Comprime una imagen para las tarjetas de producto: máximo 960px y WebP cuando el
+ * navegador sabe codificarlo; si no, JPEG. Resultado típico: 40-120 KB.
+ */
+export async function comprimirImagen(file: Blob | File, maxWidth = MAX_WIDTH): Promise<ImagenComprimida> {
+  const img = await cargarImagenDesdeBlob(file);
+  const canvas = dibujarEnCanvasReducido(img, maxWidth);
+  if (!canvas) {
+    throw new Error('No se pudo obtener contexto de canvas');
+  }
+
+  const webp = await canvasToBlob(canvas, 'image/webp', WEBP_QUALITY);
+  if (webp && webp.type === 'image/webp') {
+    return { blob: webp, mimeType: 'image/webp', extension: 'webp', width: canvas.width, height: canvas.height };
+  }
+
+  const jpeg = await canvasToBlob(canvas, 'image/jpeg', JPEG_QUALITY);
+  if (!jpeg) {
+    throw new Error('No se pudo comprimir la imagen');
+  }
+  return { blob: jpeg, mimeType: 'image/jpeg', extension: 'jpg', width: canvas.width, height: canvas.height };
 }
 
 /**
@@ -95,22 +122,22 @@ export async function subirImagenProducto(
   nombreProducto: string,
   negocioId: string
 ): Promise<string> {
-  const { blob: compressedBlob } = await comprimirImagen(file);
+  const comprimida = await comprimirImagen(file);
 
   if (!storage) {
     throw new Error('Firebase Storage no está disponible');
   }
 
   try {
-    const fileName = `${uuidv4()}.jpg`;
+    const fileName = `${uuidv4()}.${comprimida.extension}`;
     const tenant = validarNegocioIdParaStorage(negocioId);
     const cleanName = normalizarNombreParaStorage(nombreProducto);
     const storagePath = `${STORAGE_BUCKET}/${tenant}/${cleanName}/${fileName}`;
     const storageRef = ref(storage, storagePath);
 
-    const uploadTask = uploadBytesResumable(storageRef, compressedBlob, {
-      contentType: 'image/jpeg',
-      cacheControl: 'public, max-age=31536000',
+    const uploadTask = uploadBytesResumable(storageRef, comprimida.blob, {
+      contentType: comprimida.mimeType,
+      cacheControl: 'public, max-age=31536000, immutable',
     });
 
     const snapshot = await new Promise<UploadTaskSnapshot>((resolve, reject) => {

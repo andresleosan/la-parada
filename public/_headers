@@ -1,0 +1,26 @@
+# Cabeceras de caché para Cloudflare Pages.
+# Los bundles de Vite llevan hash en el nombre: pueden cachearse un año como inmutables.
+/assets/*.js
+  Cache-Control: public, max-age=31536000, immutable
+/assets/*.css
+  Cache-Control: public, max-age=31536000, immutable
+/assets/*.woff2
+  Cache-Control: public, max-age=31536000, immutable
+
+# Fotos del menú y fondo de mesa: nombre fijo, se revalidan cada 30 días.
+/images/*
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=86400
+/assets/*.jpg
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=86400
+
+# Iconos y logos.
+/favicon.ico
+  Cache-Control: public, max-age=604800
+/favicon-32.png
+  Cache-Control: public, max-age=604800
+/favicon.png
+  Cache-Control: public, max-age=604800
+/logo-96.jpg
+  Cache-Control: public, max-age=604800
+/logo-192.jpg
+  Cache-Control: public, max-age=604800

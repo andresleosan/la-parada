@@ -83,6 +83,30 @@ La tarjeta ahora mostrará:
 - Nombre, descripción y precio encima
 - Botones de acción (Mostrar, Editar, Eliminar)
 
+## ⚡ Optimización de peso (fotos locales y subidas)
+
+### Fotos gourmet del menú (`/images/products/`)
+
+- Los originales (800-900 KB cada uno) viven en `media/source/` y **no se despliegan**.
+- `pnpm run images:optimize` genera con `sharp` las versiones servidas desde `public/`:
+  - `<slug>-480.webp` (25-50 KB) para móvil y tarjetas del POS.
+  - `<slug>-960.webp` (60-140 KB) para pantallas densas y el storefront.
+  - `<slug>.jpg` (75-150 KB) como fallback y para URLs heredadas guardadas en Firestore.
+  - `assets/background-table.jpg` (100 KB) para componer el fondo de mesa.
+  - `favicon.ico` (2 KB) y `favicon.png` (192px) a partir de `media/source/Logo.jpg`.
+- Para cambiar una foto: reemplaza el archivo en `media/source/products/` con el mismo nombre y vuelve a correr el script.
+- `src/utils/productImages.ts` resuelve la variante (`getGourmetImage(nombre, fallback, 480 | 960)`) y arma el `srcSet` (`getGourmetImageSrcSet`) que usa el storefront.
+
+### Fotos subidas por el negocio (Firebase Storage)
+
+- Antes de subir, `comprimirImagen` reduce a 960px y codifica en **WebP** (calidad 0.8); en navegadores sin codificador WebP (Safari) usa JPEG.
+- Antes de enviar a remove.bg, `prepararImagenParaEdicion` reduce la foto a 1600px (~300 KB) para que el filtro "fondo de mesa" no suba 4-6 MB desde el móvil.
+- Los objetos se guardan con `Cache-Control: public, max-age=31536000, immutable` (el nombre lleva UUID).
+
+### Caché en el hosting
+
+- `public/_headers` (Cloudflare Pages) y `firebase.json` (Firebase Hosting) cachean bundles con hash un año y las imágenes 30 días.
+
 ## 📝 Notas importantes
 
 - Las imágenes se guardan como **URLs externas** (en Unsplash)

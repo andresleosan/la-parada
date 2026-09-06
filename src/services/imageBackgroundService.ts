@@ -1,9 +1,14 @@
 import { httpsCallable } from 'firebase/functions';
 import { appCheckConfigured, functions } from '@/services/firebase';
+import { dibujarEnCanvasReducido } from '@/services/storageService';
 
 const DEFAULT_TABLE_BACKGROUND_URL = '/assets/background-table.jpg';
 const MAX_COMPOSITION_SIZE = 1600;
 const PRODUCT_TARGET_HEIGHT_RATIO = 0.78;
+/** La foto final mide 960px: mandar más de 1600px a remove.bg solo alarga la subida en móvil. */
+const MAX_EDIT_INPUT_SIZE = 1600;
+const MAX_EDIT_INPUT_BYTES = 1_200_000;
+const EDIT_INPUT_JPEG_QUALITY = 0.9;
 
 interface RemoveBackgroundRequest {
   imageBase64: string;
@@ -89,6 +94,33 @@ function friendlyProcessingError(error: unknown): Error {
 }
 
 /**
+ * Reduce la foto original antes de enviarla a remove.bg: una foto de móvil de 4-6 MB
+ * pasa a ~300 KB, así la edición tarda segundos en vez de minutos con datos móviles.
+ * Si ya es pequeña se envía tal cual. Los PNG con transparencia se conservan.
+ */
+export async function prepararImagenParaEdicion(source: Blob): Promise<Blob> {
+  const image = await cargarImagen(source);
+  const largestSide = Math.max(image.naturalWidth, image.naturalHeight);
+  if (largestSide <= MAX_EDIT_INPUT_SIZE && source.size <= MAX_EDIT_INPUT_BYTES) {
+    return source;
+  }
+
+  const canvas = dibujarEnCanvasReducido(image, MAX_EDIT_INPUT_SIZE);
+  if (!canvas) return source;
+
+  const keepAlpha = source.type === 'image/png';
+  const reduced = await new Promise<Blob | null>((resolve) => {
+    canvas.toBlob(
+      (blob) => resolve(blob),
+      keepAlpha ? 'image/png' : 'image/jpeg',
+      EDIT_INPUT_JPEG_QUALITY
+    );
+  });
+
+  return reduced && reduced.size < source.size ? reduced : source;
+}
+
+/**
  * Envía una imagen al backend protegido. La API key de remove.bg nunca se entrega al navegador.
  */
 export async function removerFondoProducto(source: Blob): Promise<Blob> {
@@ -96,10 +128,12 @@ export async function removerFondoProducto(source: Blob): Promise<Blob> {
     throw new Error('La edición de fotos requiere una sesión y App Check configurado');
   }
 
-  const mimeType = source.type as RemoveBackgroundRequest['mimeType'];
-  if (!['image/jpeg', 'image/png', 'image/webp'].includes(mimeType)) {
+  if (!['image/jpeg', 'image/png', 'image/webp'].includes(source.type)) {
     throw new Error('El formato de imagen no está permitido');
   }
+
+  const prepared = await prepararImagenParaEdicion(source);
+  const mimeType = prepared.type as RemoveBackgroundRequest['mimeType'];
 
   try {
     const callable = httpsCallable<RemoveBackgroundRequest, RemoveBackgroundResponse>(
@@ -108,7 +142,7 @@ export async function removerFondoProducto(source: Blob): Promise<Blob> {
       { limitedUseAppCheckTokens: true }
     );
     const result = await callable({
-      imageBase64: await blobToBase64(source),
+      imageBase64: await blobToBase64(prepared),
       mimeType,
     });
     if (
