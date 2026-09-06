@@ -359,24 +359,29 @@ export function Carrito({
             disabled={loading}
           />
 
-          {/* Valores rápidos seleccionables (se suman) */}
+          {/* Valores rápidos: cada botón fija el monto recibido (no se acumulan) */}
           <div className="space-y-2">
-            <p className="text-xs text-neutral-400 px-1">Valores rápidos (haz clic para sumar):</p>
+            <p className="text-xs text-neutral-400 px-1">Valores rápidos (haz clic para fijar el monto):</p>
             <div className="grid grid-cols-4 gap-2">
-              {[1000, 2000, 5000, 10000, 20000, 50000, 100000].map((valor) => (
-                <button
-                  key={valor}
-                  type="button"
-                  onClick={() => {
-                    const currentMonto = Number(montoRecibido) || 0;
-                    setMontoRecibido((currentMonto + valor).toString());
-                  }}
-                  disabled={loading}
-                  className={`py-2 px-2 rounded text-xs font-semibold transition-colors bg-neutral-700 text-neutral-50 hover:bg-neutral-600 disabled:opacity-50 disabled:cursor-not-allowed`}
-                >
-                  {(valor / 1000).toFixed(0)}K
-                </button>
-              ))}
+              {[1000, 2000, 5000, 10000, 20000, 50000, 100000].map((valor) => {
+                const seleccionado = Number(montoRecibido) === valor;
+                return (
+                  <button
+                    key={valor}
+                    type="button"
+                    onClick={() => setMontoRecibido(valor.toString())}
+                    disabled={loading}
+                    aria-pressed={seleccionado}
+                    className={`py-2 px-2 rounded text-xs font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                      seleccionado
+                        ? 'bg-gold-500 text-neutral-950 hover:bg-gold-400'
+                        : 'bg-neutral-700 text-neutral-50 hover:bg-neutral-600'
+                    }`}
+                  >
+                    {(valor / 1000).toFixed(0)}K
+                  </button>
+                );
+              })}
             </div>
             
             {/* Botón para limpiar */}
