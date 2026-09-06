@@ -10,21 +10,16 @@ import {
   User,
   LogOut,
   MapPin,
-  Flame,
   Search,
-  Clock,
-  Truck,
   ChevronLeft,
   ChevronRight,
   UtensilsCrossed,
   ArrowRight,
-  ShieldCheck,
   Send,
   Banknote,
   Phone,
   Sun,
   Moon,
-  Receipt,
 } from 'lucide-react';
 import {
   signInWithEmailAndPassword,
@@ -78,16 +73,18 @@ function getCategoryTag(nombre: string): { label: string; tagColor: string } {
 // Copy del hero por jornada: habla del bocado, no de la plataforma.
 const HERO_COPY = {
   mañana: {
-    kicker: 'Arepas doradas en plancha, caldos y desayunos calientes',
-    title: 'Arepas doradas',
-    accent: 'a la plancha.',
-    lead: 'Desayunos tradicionales, arepas rellenas y caldos caseros. Pide desde aquí y empezamos a prepararlo en cuanto llega a cocina.',
+    kicker: 'Turno de la mañana',
+    title: 'El día empieza',
+    accent: 'en la plancha.',
+    lead: 'Arepas rellenas, caldos y desayunos que se arman al momento. Pide desde aquí y sale caliente.',
+    marks: ['Masa del día', 'Desde las 7:00 a. m.', 'Efectivo o transferencia'],
   },
   noche: {
-    kicker: 'Queso que estira, masa recién horneada y plancha encendida',
-    title: 'Crujiente afuera.',
-    accent: 'Queso adentro.',
-    lead: 'Elige tu antojo, ajusta la cantidad y el pedido entra directo a cocina.',
+    kicker: 'Turno de la noche',
+    title: 'Se parte. Estira.',
+    accent: 'Desaparece.',
+    lead: 'Tequeños, panceroti y parrilla que se preparan cuando tú los pides. Nada esperando bajo una lámpara.',
+    marks: ['Se prepara al pedirlo', 'Entrega coordinada', 'Efectivo o transferencia'],
   },
 } as const;
 
@@ -560,8 +557,8 @@ export function LandingTiendaPage() {
               <span className="font-display font-black text-xl sm:text-2xl text-white tracking-wide uppercase leading-none block">
                 La Parada
               </span>
-              <span className="text-[10px] sm:text-xs text-amber-400 font-medium tracking-wider uppercase">
-                Comida Rápida & Tradición
+              <span className="text-[10px] sm:text-xs text-amber-400 font-medium tracking-wider">
+                Sabores que te acompañan
               </span>
             </div>
           </Link>
@@ -667,15 +664,14 @@ export function LandingTiendaPage() {
         <div className="relative z-10 mx-auto grid w-full max-w-7xl grid-cols-1 items-center gap-8 lg:grid-cols-12">
           {/* Columna Izquierda: Copy Directo y Búsqueda */}
           <div className="space-y-5 text-left lg:col-span-7">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/40 border border-amber-500/30 text-amber-300 text-xs font-semibold backdrop-blur-md">
-              <Flame size={14} className="text-amber-400" />
-              <span className="sm:hidden">Hecho al momento</span>
-              <span className="hidden sm:inline">{heroCopy.kicker}</span>
+            <div className="flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.28em] text-amber-400">
+              <span className="h-px w-8 bg-amber-400/60" aria-hidden="true" />
+              {heroCopy.kicker}
             </div>
 
             <h1 className="max-w-3xl font-display text-4xl font-black leading-[1.02] tracking-tight text-white drop-shadow-[0_2px_18px_rgba(0,0,0,0.6)] sm:text-6xl lg:text-[4.25rem]">
               {heroCopy.title}{' '}
-              <span className="text-amber-400 drop-shadow-[0_2px_14px_rgba(245,158,11,0.35)]">
+              <span className="block text-amber-400 drop-shadow-[0_2px_14px_rgba(245,158,11,0.35)]">
                 {heroCopy.accent}
               </span>
             </h1>
@@ -684,18 +680,17 @@ export function LandingTiendaPage() {
               {heroCopy.lead}
             </p>
 
-            {/* Badges de Confianza */}
-            <div className="hidden flex-wrap justify-start gap-2.5 pt-1 text-xs text-neutral-200 sm:flex">
-              <span className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-black/45 px-3.5 py-2 shadow-sm backdrop-blur-md">
-                <Flame size={14} className="text-amber-400" /> Se prepara al recibir tu pedido
-              </span>
-              <span className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-black/45 px-3.5 py-2 shadow-sm backdrop-blur-md">
-                <Truck size={14} className="text-emerald-400" /> Entrega coordinada por WhatsApp
-              </span>
-              <span className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-black/45 px-3.5 py-2 shadow-sm backdrop-blur-md">
-                <Banknote size={14} className="text-sky-400" /> Pagas en efectivo o transferencia
-              </span>
-            </div>
+            {/* Datos de confianza: tipografía, sin iconos ni cajas. */}
+            <ul className="flex flex-wrap items-center gap-x-4 gap-y-2 pt-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-neutral-300 sm:gap-x-5 sm:text-[11px]">
+              {heroCopy.marks.map((mark, index) => (
+                <li key={mark} className="flex items-center gap-4 sm:gap-5">
+                  {index > 0 && (
+                    <span className="hidden h-3.5 w-px bg-white/20 sm:block" aria-hidden="true" />
+                  )}
+                  <span className="drop-shadow-[0_1px_6px_rgba(0,0,0,0.8)]">{mark}</span>
+                </li>
+              ))}
+            </ul>
           </div>
 
           {/* Columna Derecha: Showcase del Plato / Combo Estrella */}
@@ -894,8 +889,8 @@ export function LandingTiendaPage() {
         {combosFiltrados.length > 0 && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Flame size={22} className="text-amber-400" />
+              <div className="flex items-center gap-3">
+                <span className="h-6 w-1 rounded-full bg-amber-400" aria-hidden="true" />
                 <h2 className="font-display text-xl sm:text-2xl font-black text-white">
                   Combos de la Casa
                 </h2>
@@ -993,8 +988,8 @@ export function LandingTiendaPage() {
         {categoriaActiva !== 'combos' && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <UtensilsCrossed size={20} className="text-amber-400" />
+            <div className="flex items-center gap-3">
+              <span className="h-6 w-1 rounded-full bg-amber-400" aria-hidden="true" />
               <h2 className="font-display text-xl sm:text-2xl font-black text-white">
                 Nuestro menú
               </h2>
@@ -1131,8 +1126,7 @@ export function LandingTiendaPage() {
             >
               <div className="flex items-start justify-between bg-neutral-950 border-b border-neutral-800 px-5 py-4 text-white">
                 <div>
-                  <p className="mb-1 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.16em] text-amber-400">
-                    <Receipt size={16} aria-hidden="true" />
+                  <p className="mb-1 text-xs font-bold uppercase tracking-[0.16em] text-amber-400">
                     Pedido en curso
                   </p>
                   <h2 className="font-display text-xl font-black">Tu ticket</h2>
@@ -1240,10 +1234,8 @@ export function LandingTiendaPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Tarjeta 1: Horarios */}
             <div className="p-5 bg-neutral-950 rounded-2xl border border-neutral-800 space-y-3">
-              <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center">
-                <Clock size={20} />
-              </div>
-              <h4 className="font-bold text-sm text-white">Horarios de Atención</h4>
+              <span className="block h-1 w-10 rounded-full bg-amber-400" aria-hidden="true" />
+              <h4 className="font-display text-base font-black text-white">Horarios de Atención</h4>
               <ul className="text-xs text-neutral-300 space-y-1.5">
                 <li className="flex justify-between">
                   <span className="text-neutral-400">Jornada Mañana:</span>
@@ -1261,10 +1253,8 @@ export function LandingTiendaPage() {
 
             {/* Tarjeta 2: Tiempos & Cobertura */}
             <div className="p-5 bg-neutral-950 rounded-2xl border border-neutral-800 space-y-3">
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
-                <Truck size={20} />
-              </div>
-              <h4 className="font-bold text-sm text-white">Tiempos & Entrega</h4>
+              <span className="block h-1 w-10 rounded-full bg-emerald-400" aria-hidden="true" />
+              <h4 className="font-display text-base font-black text-white">Tiempos & Entrega</h4>
               <ul className="text-xs text-neutral-300 space-y-1.5">
                 <li className="flex justify-between">
                   <span className="text-neutral-400">Tiempo promedio:</span>
@@ -1282,10 +1272,8 @@ export function LandingTiendaPage() {
 
             {/* Tarjeta 3: Métodos de Pago */}
             <div className="p-5 bg-neutral-950 rounded-2xl border border-neutral-800 space-y-3">
-              <div className="w-10 h-10 rounded-xl bg-sky-500/10 text-sky-400 flex items-center justify-center">
-                <ShieldCheck size={20} />
-              </div>
-              <h4 className="font-bold text-sm text-white">Medios de Pago</h4>
+              <span className="block h-1 w-10 rounded-full bg-sky-400" aria-hidden="true" />
+              <h4 className="font-display text-base font-black text-white">Medios de Pago</h4>
               <div className="flex flex-wrap gap-1.5 pt-1">
                 <span className="px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-[11px] font-bold">
                   Efectivo
