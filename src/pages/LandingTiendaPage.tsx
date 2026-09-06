@@ -47,6 +47,7 @@ import { createToast } from '@/components/ui/Toast';
 import { usePublicCategorias } from '@/hooks/usePublicCategorias';
 import { MenuItemQuantityControl } from '@/components/storefront/MenuItemQuantityControl';
 import { StorefrontDialog } from '@/components/storefront/StorefrontDialog';
+import { HeroVideo } from '@/components/storefront/HeroVideo';
 import {
   filtrarCombosMenu,
   filtrarProductosMenu,
@@ -73,6 +74,22 @@ function getCategoryTag(nombre: string): { label: string; tagColor: string } {
   if (n.includes('jugo') || n.includes('gaseosa') || n.includes('bebida') || n.includes('coca')) return { label: 'Bebidas', tagColor: 'bg-sky-500/20 text-sky-300 border-sky-500/30' };
   return { label: 'Especialidad', tagColor: 'bg-neutral-800 text-neutral-300 border-neutral-700' };
 }
+
+// Copy del hero por jornada: habla del bocado, no de la plataforma.
+const HERO_COPY = {
+  mañana: {
+    kicker: 'Arepas doradas en plancha, caldos y desayunos calientes',
+    title: 'Arepas doradas',
+    accent: 'a la plancha.',
+    lead: 'Desayunos tradicionales, arepas rellenas y caldos caseros. Pide desde aquí y empezamos a prepararlo en cuanto llega a cocina.',
+  },
+  noche: {
+    kicker: 'Queso que estira, masa recién horneada y plancha encendida',
+    title: 'Crujiente afuera.',
+    accent: 'Queso adentro.',
+    lead: 'Elige tu antojo, ajusta la cantidad y el pedido entra directo a cocina.',
+  },
+} as const;
 
 function getCartLimitMessage(reason: StorefrontCartLimitReason): string {
   if (reason === 'max-per-item') return 'Puedes pedir máximo 20 unidades de cada producto.';
@@ -485,6 +502,8 @@ export function LandingTiendaPage() {
     }
   };
 
+  const heroCopy = HERO_COPY[jornada === 'mañana' ? 'mañana' : 'noche'];
+
   return (
     <div className="min-h-screen bg-restaurant-theme text-neutral-100 font-sans selection:bg-amber-500 selection:text-black relative overflow-x-hidden">
       <p className="sr-only" aria-live="polite" aria-atomic="true">
@@ -642,38 +661,39 @@ export function LandingTiendaPage() {
       </header>
 
       {/* 2. Hero Gastronómico */}
-      <section className="relative overflow-hidden border-b border-neutral-800/80 px-4 py-6 sm:px-6 sm:py-10 lg:px-8 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(245,158,11,0.12),rgba(11,10,9,0))]">
-        <div className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-8 lg:grid-cols-12">
+      <section className="relative isolate flex min-h-[460px] items-center overflow-hidden border-b border-neutral-800/80 px-4 py-14 sm:min-h-[520px] sm:px-6 sm:py-20 lg:px-8 lg:py-24">
+        <HeroVideo jornada={jornada} />
+
+        <div className="relative z-10 mx-auto grid w-full max-w-7xl grid-cols-1 items-center gap-8 lg:grid-cols-12">
           {/* Columna Izquierda: Copy Directo y Búsqueda */}
-          <div className="space-y-4 text-left lg:col-span-7">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/25 text-amber-300 text-xs font-semibold backdrop-blur-sm">
+          <div className="space-y-5 text-left lg:col-span-7">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/40 border border-amber-500/30 text-amber-300 text-xs font-semibold backdrop-blur-md">
               <Flame size={14} className="text-amber-400" />
               <span className="sm:hidden">Hecho al momento</span>
-              <span className="hidden sm:inline">
-                {jornada === 'mañana'
-                  ? 'Desayunos tradicionales, arepas rellenas y caldos caseros'
-                  : 'Carne 100% de res a la parrilla, tocineta crujiente y pan brioche'}
-              </span>
+              <span className="hidden sm:inline">{heroCopy.kicker}</span>
             </div>
 
-            <h1 className="max-w-3xl font-display text-3xl font-black leading-[1.05] tracking-tight text-white sm:text-5xl lg:text-[3.5rem]">
-              De la parrilla <span className="text-amber-400 drop-shadow-[0_2px_14px_rgba(245,158,11,0.3)]">a tu mesa.</span>
+            <h1 className="max-w-3xl font-display text-4xl font-black leading-[1.02] tracking-tight text-white drop-shadow-[0_2px_18px_rgba(0,0,0,0.6)] sm:text-6xl lg:text-[4.25rem]">
+              {heroCopy.title}{' '}
+              <span className="text-amber-400 drop-shadow-[0_2px_14px_rgba(245,158,11,0.35)]">
+                {heroCopy.accent}
+              </span>
             </h1>
 
-            <p className="max-w-2xl text-sm font-normal leading-relaxed text-neutral-300 sm:text-base">
-              Elige tu antojo, ajusta la cantidad y envía el pedido directo a cocina.
+            <p className="max-w-xl text-base font-normal leading-relaxed text-neutral-200 drop-shadow-[0_1px_8px_rgba(0,0,0,0.7)] sm:text-lg">
+              {heroCopy.lead}
             </p>
 
             {/* Badges de Confianza */}
-            <div className="hidden flex-wrap justify-start gap-2.5 pt-1 text-xs text-neutral-300 sm:flex">
-              <span className="flex items-center gap-1.5 bg-neutral-900/90 px-3.5 py-2 rounded-xl border border-neutral-800/90 shadow-sm">
-                <Flame size={14} className="text-amber-400" /> Preparación al Instante
+            <div className="hidden flex-wrap justify-start gap-2.5 pt-1 text-xs text-neutral-200 sm:flex">
+              <span className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-black/45 px-3.5 py-2 shadow-sm backdrop-blur-md">
+                <Flame size={14} className="text-amber-400" /> Se prepara al recibir tu pedido
               </span>
-              <span className="flex items-center gap-1.5 bg-neutral-900/90 px-3.5 py-2 rounded-xl border border-neutral-800/90 shadow-sm">
-                <Truck size={14} className="text-emerald-400" /> Entrega coordinada
+              <span className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-black/45 px-3.5 py-2 shadow-sm backdrop-blur-md">
+                <Truck size={14} className="text-emerald-400" /> Entrega coordinada por WhatsApp
               </span>
-              <span className="flex items-center gap-1.5 bg-neutral-900/90 px-3.5 py-2 rounded-xl border border-neutral-800/90 shadow-sm">
-                <Banknote size={14} className="text-sky-400" /> Pago offline al coordinar el pedido
+              <span className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-black/45 px-3.5 py-2 shadow-sm backdrop-blur-md">
+                <Banknote size={14} className="text-sky-400" /> Pagas en efectivo o transferencia
               </span>
             </div>
           </div>

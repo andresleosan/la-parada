@@ -13,6 +13,10 @@
 /assets/*.jpg
   Cache-Control: public, max-age=2592000, stale-while-revalidate=86400
 
+# Video y pósters del hero: nombre fijo, se revalidan cada 30 días.
+/media/*
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=86400
+
 # Iconos y logos.
 /favicon.ico
   Cache-Control: public, max-age=604800
