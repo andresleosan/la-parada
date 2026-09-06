@@ -23,6 +23,7 @@ import { Card } from '@/components/ui/Card';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { ValoresRapidos } from '@/components/ui/ValoresRapidos';
 import { Badge } from '@/components/ui/Badge';
 import { useJornada } from '@/context/JornadaContext';
 import { useReportes } from '@/hooks/useReportes';
@@ -602,6 +603,13 @@ export function DashboardPage() {
               required
             />
 
+            <ValoresRapidos
+              value={montoCajaStr}
+              onChange={setMontoCajaStr}
+              disabled={creandoCaja}
+              etiqueta="Bases frecuentes (haz clic para fijar el monto):"
+            />
+
             <div className="flex gap-3 pt-2">
               <Button
                 type="button"
@@ -649,6 +657,12 @@ export function DashboardPage() {
                 disabled={cargandoAgregar}
                 autoFocus
                 required
+              />
+
+              <ValoresRapidos
+                value={montoAgregar}
+                onChange={setMontoAgregar}
+                disabled={cargandoAgregar}
               />
 
               <div className="rounded-lg border border-green-500/20 bg-green-500/10 p-3 text-xs">

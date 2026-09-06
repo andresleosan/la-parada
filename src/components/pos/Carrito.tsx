@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { Input } from '@/components/ui/Input';
+import { ValoresRapidos } from '@/components/ui/ValoresRapidos';
 import { ControladorCarrito } from './ControladorCarrito';
 import { formatCOP } from '@/utils/formatCOP';
 import {
@@ -360,42 +361,7 @@ export function Carrito({
           />
 
           {/* Valores rápidos: cada botón fija el monto recibido (no se acumulan) */}
-          <div className="space-y-2">
-            <p className="text-xs text-neutral-400 px-1">Valores rápidos (haz clic para fijar el monto):</p>
-            <div className="grid grid-cols-4 gap-2">
-              {[1000, 2000, 5000, 10000, 20000, 50000, 100000].map((valor) => {
-                const seleccionado = Number(montoRecibido) === valor;
-                return (
-                  <button
-                    key={valor}
-                    type="button"
-                    onClick={() => setMontoRecibido(valor.toString())}
-                    disabled={loading}
-                    aria-pressed={seleccionado}
-                    className={`py-2 px-2 rounded text-xs font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-                      seleccionado
-                        ? 'bg-gold-500 text-neutral-950 hover:bg-gold-400'
-                        : 'bg-neutral-700 text-neutral-50 hover:bg-neutral-600'
-                    }`}
-                  >
-                    {(valor / 1000).toFixed(0)}K
-                  </button>
-                );
-              })}
-            </div>
-            
-            {/* Botón para limpiar */}
-            {montoRecibido && (
-              <button
-                type="button"
-                onClick={() => setMontoRecibido('')}
-                disabled={loading}
-                className="w-full py-2 px-2 rounded text-xs font-semibold bg-neutral-600 text-neutral-50 hover:bg-neutral-500 disabled:opacity-50 transition-colors"
-              >
-                <span className="inline-flex items-center gap-1.5"><Trash2 className="h-3.5 w-3.5" aria-hidden="true" /> Limpiar monto</span>
-              </button>
-            )}
-          </div>
+          <ValoresRapidos value={montoRecibido} onChange={setMontoRecibido} disabled={loading} />
 
           {montoRecibido && (
             <div className="flex justify-between bg-neutral-800 p-3 rounded-lg">
