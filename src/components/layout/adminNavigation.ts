@@ -7,6 +7,7 @@ import {
   ChefHat,
   CircleDollarSign,
   ClipboardList,
+  MessagesSquare,
   LineChart,
   LayoutDashboard,
   PackageSearch,
@@ -70,6 +71,14 @@ const navigationGroups: AdminNavigationGroup[] = [
         section: 'Operación',
         icon: ClipboardList,
         aliases: ['/whatsapp'],
+      },
+      {
+        path: '/chats',
+        title: 'Chats de la tienda',
+        shortTitle: 'Chats',
+        description: 'Responde a quien escribe desde la tienda web.',
+        section: 'Operación',
+        icon: MessagesSquare,
       },
       {
         path: '/domicilios',

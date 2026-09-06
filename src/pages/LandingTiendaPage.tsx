@@ -1,5 +1,5 @@
 // src/pages/LandingTiendaPage.tsx
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { lazy, Suspense, useState, useEffect, useMemo, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ShoppingCart,
@@ -41,6 +41,15 @@ import { usePublicCategorias } from '@/hooks/usePublicCategorias';
 import { MenuItemQuantityControl } from '@/components/storefront/MenuItemQuantityControl';
 import { StorefrontDialog } from '@/components/storefront/StorefrontDialog';
 import { HeroVideo } from '@/components/storefront/HeroVideo';
+
+// El chat no hace falta en el primer pintado: se carga aparte para no engordar
+// el bundle de la tienda.
+const LiveChatWidget = lazy(() =>
+  import('@/components/storefront/LiveChatWidget').then((module) => ({
+    default: module.LiveChatWidget,
+  }))
+);
+
 import {
   filtrarCombosMenu,
   filtrarProductosMenu,
@@ -125,9 +134,11 @@ export function LandingTiendaPage() {
   useEffect(() => {
     if (!auth) return;
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setClienteUser(user);
-      if (user?.displayName && !nombreCliente) {
-        setNombreCliente(user.displayName);
+      // El chat en vivo abre una sesión anónima; eso no es una cuenta de cliente.
+      const cuentaReal = user && !user.isAnonymous ? user : null;
+      setClienteUser(cuentaReal);
+      if (cuentaReal?.displayName && !nombreCliente) {
+        setNombreCliente(cuentaReal.displayName);
       }
     });
     return () => unsubscribe();
@@ -1751,6 +1762,10 @@ export function LandingTiendaPage() {
           Comida rápida artesanal & tradicional. Domicilios en toda la ciudad.
         </p>
       </footer>
+
+      <Suspense fallback={null}>
+        <LiveChatWidget />
+      </Suspense>
     </div>
   );
 }

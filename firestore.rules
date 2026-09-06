@@ -288,6 +288,88 @@ service cloud.firestore {
       }
     }
 
+    // Chat en vivo entre un visitante de la tienda y el negocio.
+    //
+    // No hay backend propio donde validar, así que el contrato se hace cumplir
+    // aquí: el id del documento ES el uid del visitante, de modo que la
+    // propiedad se verifica sin leer nada y nadie puede abrir un hilo ajeno.
+    function esDuenoDelChat(chatId) {
+      return isAuth() && request.auth.uid == chatId;
+    }
+
+    function textoChatValido(valor) {
+      return valor is string && valor.size() > 0 && valor.size() <= 1200;
+    }
+
+    function nombreChatValido(valor) {
+      return valor is string && valor.size() >= 2 && valor.size() <= 80;
+    }
+
+    // Espeja CHAT_INTERVALO_MINIMO_SEGUNDOS: frena el spam desde el navegador
+    // sin necesidad de una Function que lleve la cuenta.
+    function respetaIntervaloChat() {
+      return request.time > resource.data.ultimoMensajeEn + duration.value(2, 's');
+    }
+
+    match /chats/{chatId} {
+      allow read: if esDuenoDelChat(chatId) || canReadTenantDocument();
+
+      allow create: if esDuenoDelChat(chatId)
+        && hasTenant(request.resource.data)
+        && tenantIsActive(request.resource.data.negocioId)
+        && request.resource.data.clienteUid == chatId
+        && nombreChatValido(request.resource.data.clienteNombre)
+        && request.resource.data.estado == 'abierto'
+        && request.resource.data.ultimoMensaje == ''
+        && request.resource.data.noLeidosAdmin == 0
+        && request.resource.data.noLeidosCliente == 0;
+
+      // El visitante solo toca su propio hilo, nunca cambia de negocio ni de
+      // dueño, y no puede inflar el contador de no leídos del negocio.
+      allow update: if (
+          esDuenoDelChat(chatId)
+          && request.resource.data.negocioId == resource.data.negocioId
+          && request.resource.data.clienteUid == resource.data.clienteUid
+          && request.resource.data.creadoEn == resource.data.creadoEn
+          && nombreChatValido(request.resource.data.clienteNombre)
+          && request.resource.data.estado in ['abierto', 'en_atencion', 'cerrado']
+          && request.resource.data.noLeidosAdmin <= resource.data.noLeidosAdmin + 1
+          && request.resource.data.noLeidosCliente <= resource.data.noLeidosCliente
+          && (
+            request.resource.data.ultimoMensajeEn == resource.data.ultimoMensajeEn
+            || resource.data.ultimoMensaje == ''
+            || respetaIntervaloChat()
+          )
+        )
+        || canUpdateTenantDocument();
+
+      allow delete: if canAdminDeleteTenantDocument();
+
+      match /mensajes/{mensajeId} {
+        function chatDelVisitante() {
+          return get(/databases/$(database)/documents/chats/$(chatId)).data;
+        }
+
+        allow read: if esDuenoDelChat(chatId)
+          || isTenantMember(chatDelVisitante().negocioId);
+
+        allow create: if textoChatValido(request.resource.data.texto)
+          && request.resource.data.autorNombre is string
+          && request.resource.data.autorNombre.size() <= 80
+          && (
+            (esDuenoDelChat(chatId) && request.resource.data.autor == 'cliente')
+            || (
+              isTenantMember(chatDelVisitante().negocioId)
+              && request.resource.data.autor == 'asesor'
+            )
+          );
+
+        // Un mensaje enviado es un hecho: no se reescribe.
+        allow update: if false;
+        allow delete: if isTenantAdmin(chatDelVisitante().negocioId);
+      }
+    }
+
     match /bot_queue/{queueId} {
       allow read, write: if false;
     }

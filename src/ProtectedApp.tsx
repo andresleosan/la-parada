@@ -19,6 +19,7 @@ const ReportesPage = lazy(() => import('@/pages/ReportesPage').then((module) => 
 const BotConfigPage = lazy(() => import('@/pages/BotConfigPage').then((module) => ({ default: module.BotConfigPage })));
 const AdminSettingsPage = lazy(() => import('@/pages/AdminSettingsPage').then((module) => ({ default: module.AdminSettingsPage })));
 const WhatsAppPage = lazy(() => import('@/pages/WhatsAppPage').then((module) => ({ default: module.WhatsAppPage })));
+const ChatsPage = lazy(() => import('@/pages/ChatsPage').then((module) => ({ default: module.ChatsPage })));
 const AnalyticsPage = lazy(() => import('@/pages/AnalyticsPage'));
 const SuperAdminNegociosPage = lazy(() => import('@/pages/SuperAdminNegociosPage').then((module) => ({ default: module.SuperAdminNegociosPage })));
 
@@ -78,6 +79,7 @@ function ProtectedLayout() {
             <Route path="/inventario" element={isAdmin ? <InventarioPage /> : <Navigate to="/admin" replace />} />
             <Route path="/gastos" element={<GastosPage />} />
             <Route path="/domicilios" element={<DomiciliosPage />} />
+            <Route path="/chats" element={<ChatsPage />} />
             <Route path="/pedidos" element={<WhatsAppPage />} />
             <Route path="/whatsapp" element={<WhatsAppPage />} />
             <Route path="/reportes" element={<ReportesPage />} />
