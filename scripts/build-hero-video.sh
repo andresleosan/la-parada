@@ -11,12 +11,14 @@
 #   34556299.mp4  Hamburguesas con queso derritiéndose (Caleb Oquendo)  1920x1080 16 s
 #   31176159.mp4  Carne a la parrilla con llamas (Bon appétit)          1080x1920 23 s
 #   35517101.mp4  Bolitas de mozzarella estirándose, fondo negro        2160x3840 34 s
+#   37232230.mp4  Arepas doradas en plancha                             2160x3840  8 s
 #
 # Licencia Pexels: uso comercial permitido, sin atribución obligatoria.
 # https://www.pexels.com/license/
 #
-# Salida: un único loop H.264 sin audio, 30 fps, faststart. Horizontal 1280x720 para escritorio y
-# vertical 720x1280 para móvil. Presupuesto: <3.1 MB horizontal, <2.4 MB vertical.
+# Salida: dos loops H.264 sin audio, 30 fps, faststart, que el hero encadena en secuencia.
+# Horizontal 1280x720 para escritorio y vertical 720x1280 para móvil.
+# Presupuesto por loop: <3.1 MB horizontal, <2.4 MB vertical.
 set -euo pipefail
 
 SRC="${1:-media/source/video}"
@@ -48,16 +50,28 @@ encode() {
     -movflags +faststart -g 60 "$1"
 }
 
-# ---------- Hero: horizontal ----------
+# ---------- Clip 1 (parrilla y quesos): horizontal ----------
 FILTER="$(seg 0 1.0 5.0 1080:608:0:420 1280:720)$(seg 1 1.5 4.5 1920:1080:0:0 1280:720)$(seg 2 3.5 5.0 1080:608:0:1000 1280:720)$(seg 3 13.0 5.0 2160:1215:0:1050 1280:720)$(chain)"
-encode "$OUT/hero-landscape.mp4" 27 "$FILTER"
+encode "$OUT/hero-1-landscape.mp4" 27 "$FILTER"
 
-# ---------- Hero: vertical ----------
+# ---------- Clip 1 (parrilla y quesos): vertical ----------
 FILTER="$(seg 0 1.0 5.0 1080:1920:0:0 720:1280)$(seg 1 1.5 4.5 608:1080:656:0 720:1280)$(seg 2 3.5 5.0 1080:1920:0:0 720:1280)$(seg 3 13.0 5.0 2160:3840:0:0 720:1280)$(chain)"
-encode "$OUT/hero-portrait.mp4" 28 "$FILTER"
+encode "$OUT/hero-1-portrait.mp4" 28 "$FILTER"
+
+# ---------- Clip 2 (arepas): un solo clip de 7.6 s ----------
+AREPAS_COMMON="trim=start=0.3:duration=7.6,setpts=PTS-STARTPTS"
+AREPAS_FADES="fps=30,format=yuv420p,fade=t=in:st=0:d=0.5,fade=t=out:st=7.1:d=0.5"
+"$FF" -v error -y -i "$SRC/37232230.mp4" \
+  -vf "$AREPAS_COMMON,crop=2160:1215:0:1350,scale=1280:720:flags=lanczos,$AREPAS_FADES" \
+  -an -c:v libx264 -preset slow -crf 27 -pix_fmt yuv420p -movflags +faststart -g 60 "$OUT/hero-2-landscape.mp4"
+"$FF" -v error -y -i "$SRC/37232230.mp4" \
+  -vf "$AREPAS_COMMON,crop=2160:3840:0:0,scale=720:1280:flags=lanczos,$AREPAS_FADES" \
+  -an -c:v libx264 -preset slow -crf 28 -pix_fmt yuv420p -movflags +faststart -g 60 "$OUT/hero-2-portrait.mp4"
 
 # ---------- Pósters (primer fotograma visible mientras carga el video) ----------
-"$FF" -v error -y -ss 2.4 -i "$OUT/hero-landscape.mp4" -frames:v 1 -c:v libwebp -quality 74 "$OUT/hero-landscape.webp"
-"$FF" -v error -y -ss 2.4 -i "$OUT/hero-portrait.mp4"  -frames:v 1 -c:v libwebp -quality 74 "$OUT/hero-portrait.webp"
+"$FF" -v error -y -ss 2.4 -i "$OUT/hero-1-landscape.mp4" -frames:v 1 -c:v libwebp -quality 74 "$OUT/hero-1-landscape.webp"
+"$FF" -v error -y -ss 2.4 -i "$OUT/hero-1-portrait.mp4"  -frames:v 1 -c:v libwebp -quality 74 "$OUT/hero-1-portrait.webp"
+"$FF" -v error -y -ss 3.0 -i "$OUT/hero-2-landscape.mp4" -frames:v 1 -c:v libwebp -quality 74 "$OUT/hero-2-landscape.webp"
+"$FF" -v error -y -ss 3.0 -i "$OUT/hero-2-portrait.mp4"  -frames:v 1 -c:v libwebp -quality 74 "$OUT/hero-2-portrait.webp"
 
 ls -la "$OUT"

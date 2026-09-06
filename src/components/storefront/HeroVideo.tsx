@@ -11,24 +11,42 @@ interface HeroMedia {
 }
 
 /**
- * Loop corto (8–18 s, sin audio) generado con scripts/build-hero-video.sh a partir de
- * clips de Pexels (licencia libre para uso comercial). Un único video para todo el día,
- * con versión horizontal para escritorio y vertical para móvil para no descargar
- * píxeles de más.
+ * Loops cortos (8–18 s, sin audio) generados con scripts/build-hero-video.sh a partir de
+ * clips de Pexels (licencia libre para uso comercial). Se reproducen en secuencia y vuelven
+ * al primero: no dependen de la hora del día. Cada uno tiene versión horizontal para
+ * escritorio y vertical para móvil para no descargar píxeles de más.
+ *
+ * 1. Parrilla y quesos estirándose.  2. Arepas doradas en plancha.
  */
-const HERO_MEDIA: Record<Orientation, HeroMedia> = {
-  landscape: {
-    video: '/media/hero/hero-landscape.mp4',
-    poster: '/media/hero/hero-landscape.webp',
-    width: 1280,
-    height: 720,
-  },
-  portrait: {
-    video: '/media/hero/hero-portrait.mp4',
-    poster: '/media/hero/hero-portrait.webp',
-    width: 720,
-    height: 1280,
-  },
+const HERO_CLIPS: Record<Orientation, readonly HeroMedia[]> = {
+  landscape: [
+    {
+      video: '/media/hero/hero-1-landscape.mp4',
+      poster: '/media/hero/hero-1-landscape.webp',
+      width: 1280,
+      height: 720,
+    },
+    {
+      video: '/media/hero/hero-2-landscape.mp4',
+      poster: '/media/hero/hero-2-landscape.webp',
+      width: 1280,
+      height: 720,
+    },
+  ],
+  portrait: [
+    {
+      video: '/media/hero/hero-1-portrait.mp4',
+      poster: '/media/hero/hero-1-portrait.webp',
+      width: 720,
+      height: 1280,
+    },
+    {
+      video: '/media/hero/hero-2-portrait.mp4',
+      poster: '/media/hero/hero-2-portrait.webp',
+      width: 720,
+      height: 1280,
+    },
+  ],
 };
 
 const PORTRAIT_QUERY = '(max-width: 767px)';
@@ -65,11 +83,14 @@ interface HeroVideoProps {
 export function HeroVideo({ className = '' }: HeroVideoProps) {
   const [orientation, setOrientation] = useState<Orientation>(getOrientation);
   const [videoEnabled, setVideoEnabled] = useState<boolean>(shouldPlayVideo);
+  const [clipIndex, setClipIndex] = useState(0);
   const [ready, setReady] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const media = HERO_MEDIA[orientation];
+  const clips = HERO_CLIPS[orientation];
+  // El índice se normaliza aquí para que girar el móvil nunca deje un clip fuera de rango.
+  const media = clips[clipIndex % clips.length];
 
   useEffect(() => {
     if (!canMatchMedia()) return;
@@ -87,7 +108,8 @@ export function HeroVideo({ className = '' }: HeroVideoProps) {
     };
   }, []);
 
-  // Al cambiar de orientación el <video> se remonta; el póster cubre mientras carga.
+  // Al cambiar de clip u orientación el <video> se remonta; el póster cubre mientras carga
+  // y, como cada loop abre y cierra en negro, el relevo se ve como un fundido.
   useEffect(() => {
     setReady(false);
   }, [media.video]);
@@ -142,7 +164,6 @@ export function HeroVideo({ className = '' }: HeroVideoProps) {
           }`}
           autoPlay
           muted
-          loop
           playsInline
           preload="auto"
           poster={media.poster}
@@ -151,6 +172,7 @@ export function HeroVideo({ className = '' }: HeroVideoProps) {
           tabIndex={-1}
           onCanPlay={() => setReady(true)}
           onPlaying={() => setReady(true)}
+          onEnded={() => setClipIndex((current) => (current + 1) % clips.length)}
         >
           <source src={media.video} type="video/mp4" />
         </video>
