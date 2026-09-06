@@ -1,9 +1,8 @@
 // src/components/productos/ProductoForm.tsx
 import { useEffect, useState } from 'react';
-import { Producto, Jornada } from '../../types';
+import { Producto } from '../../types';
 import { Input } from '../ui/Input';
 import { Textarea } from '../ui/Textarea';
-import { Select } from '../ui/Select';
 import { FormModal } from './FormModal';
 import { Timestamp } from 'firebase/firestore';
 import { CheckCircle2, Heart, Image as ImageIcon, Tag, X } from 'lucide-react';
@@ -35,7 +34,6 @@ export const ProductoForm: React.FC<ProductoFormProps> = ({
   const [precioStr, setPrecioStr] = useState(
     initialData?.precio ? initialData.precio.toString() : ''
   );
-  const [jornada, setJornada] = useState<Jornada>(initialData?.jornada || 'ambas');
   const [disponible, setDisponible] = useState(initialData?.disponible !== false);
   const [destacado, setDestacado] = useState(Boolean(initialData?.destacado));
   const [imagenUrl, setImagenUrl] = useState(initialData?.imagenUrl || '');
@@ -48,7 +46,6 @@ export const ProductoForm: React.FC<ProductoFormProps> = ({
     setDescripcion(initialData?.descripcion || '');
     setCategoria(initialData?.categoria || '');
     setPrecioStr(initialData?.precio?.toString() || '');
-    setJornada(initialData?.jornada || 'ambas');
     setDisponible(initialData?.disponible !== false);
     setDestacado(Boolean(initialData?.destacado));
     setImagenUrl(initialData?.imagenUrl || '');
@@ -81,7 +78,6 @@ export const ProductoForm: React.FC<ProductoFormProps> = ({
         descripcion: descripcion.trim(),
         categoria: catTrimmed,
         precio,
-        jornada,
         disponible,
         destacado,
         imagenUrl: imagenUrl || undefined,
@@ -97,7 +93,6 @@ export const ProductoForm: React.FC<ProductoFormProps> = ({
       setCategoria('');
       setPrecioStr('');
       setImagenUrl('');
-      setJornada('ambas');
       setDisponible(true);
       setDestacado(false);
       setErrors({});
@@ -184,21 +179,6 @@ export const ProductoForm: React.FC<ProductoFormProps> = ({
         placeholder="Ej: 18000"
         error={errors.precio}
       />
-
-      <Select
-        label="Jornada"
-        value={jornada}
-        onChange={(e) => setJornada(e.target.value as Jornada)}
-        options={[
-          { value: 'mañana', label: 'Mañana/Tarde' },
-          { value: 'noche', label: 'Noche' },
-          { value: 'ambas', label: 'Ambas jornadas' },
-        ]}
-      >
-        <option value="mañana">Mañana/Tarde</option>
-        <option value="noche">Noche</option>
-        <option value="ambas">Ambas jornadas</option>
-      </Select>
 
       {/* Sección de Imagen */}
       <div className="space-y-3 rounded-2xl border border-amber-500/20 bg-neutral-900/60 p-4">

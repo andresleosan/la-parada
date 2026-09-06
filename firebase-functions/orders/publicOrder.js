@@ -25,7 +25,6 @@ const ALLOWED_ORDER_KEYS = new Set([
     'barrio',
     'notas',
     'metodoPago',
-    'jornada',
     'pagaCon',
 ]);
 const ALLOWED_ITEM_KEYS = new Set(['tipo', 'referenciaId', 'cantidad']);
@@ -117,9 +116,6 @@ function parsePublicOrderInput(data) {
     if (data.metodoPago !== 'efectivo' && data.metodoPago !== 'transferencia') {
         throw new PublicOrderError('invalid-argument', 'metodoPago debe ser offline');
     }
-    if (data.jornada !== 'mañana' && data.jornada !== 'noche') {
-        throw new PublicOrderError('invalid-argument', 'jornada no es válida');
-    }
     let pagaCon;
     if (data.pagaCon !== undefined && data.pagaCon !== null) {
         if (data.metodoPago !== 'efectivo' || !Number.isSafeInteger(data.pagaCon) || data.pagaCon <= 0 || data.pagaCon > 50000000) {
@@ -140,7 +136,6 @@ function parsePublicOrderInput(data) {
         barrio: normalizeText(data.barrio, 'barrio', 2, 80),
         ...(notas && { notas }),
         metodoPago: data.metodoPago,
-        jornada: data.jornada,
         ...(pagaCon !== undefined && { pagaCon }),
     };
 }
@@ -160,9 +155,6 @@ function calculateOrderItems(input, catalogByReference) {
         }
         if (catalogItem.disponible !== true) {
             throw new PublicOrderError('failed-precondition', 'Uno o más productos no están disponibles');
-        }
-        if (catalogItem.jornada !== 'ambas' && catalogItem.jornada !== input.jornada) {
-            throw new PublicOrderError('failed-precondition', 'Uno o más productos no están disponibles en esta jornada');
         }
         const rawPrice = requested.tipo === 'producto' ? catalogItem.precio : catalogItem.precioEspecial;
         if (!Number.isSafeInteger(rawPrice) || rawPrice <= 0) {
@@ -278,7 +270,6 @@ async function createPublicOrderInFirestore(db, input, clientKey, context = {}) 
             tipoEntrega: 'domicilio',
             origen: 'web',
             estado: 'pendiente',
-            jornada: input.jornada,
             ...(input.pagaCon !== undefined && { pagaCon: input.pagaCon }),
             ...(context.authUid && { clienteUid: context.authUid }),
             ...(context.appId && { appId: context.appId }),

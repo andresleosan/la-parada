@@ -20,13 +20,11 @@ const ALLOWED_ORDER_KEYS = new Set([
   'barrio',
   'notas',
   'metodoPago',
-  'jornada',
   'pagaCon',
 ]);
 const ALLOWED_ITEM_KEYS = new Set(['tipo', 'referenciaId', 'cantidad']);
 
 export type MetodoPagoOffline = 'efectivo' | 'transferencia';
-export type JornadaPedido = 'mañana' | 'noche';
 export type TipoItemPedido = 'producto' | 'combo';
 
 export interface PublicOrderItemInput {
@@ -45,7 +43,6 @@ export interface PublicOrderInput {
   barrio: string;
   notas?: string;
   metodoPago: MetodoPagoOffline;
-  jornada: JornadaPedido;
   pagaCon?: number;
 }
 
@@ -53,7 +50,6 @@ export interface CatalogItemData {
   nombre?: unknown;
   negocioId?: unknown;
   disponible?: unknown;
-  jornada?: unknown;
   precio?: unknown;
   precioEspecial?: unknown;
 }
@@ -188,10 +184,6 @@ export function parsePublicOrderInput(data: unknown): PublicOrderInput {
   if (data.metodoPago !== 'efectivo' && data.metodoPago !== 'transferencia') {
     throw new PublicOrderError('invalid-argument', 'metodoPago debe ser offline');
   }
-  if (data.jornada !== 'mañana' && data.jornada !== 'noche') {
-    throw new PublicOrderError('invalid-argument', 'jornada no es válida');
-  }
-
   let pagaCon: number | undefined;
   if (data.pagaCon !== undefined && data.pagaCon !== null) {
     if (data.metodoPago !== 'efectivo' || !Number.isSafeInteger(data.pagaCon) || (data.pagaCon as number) <= 0 || (data.pagaCon as number) > 50_000_000) {
@@ -214,7 +206,6 @@ export function parsePublicOrderInput(data: unknown): PublicOrderInput {
     barrio: normalizeText(data.barrio, 'barrio', 2, 80),
     ...(notas && { notas }),
     metodoPago: data.metodoPago,
-    jornada: data.jornada,
     ...(pagaCon !== undefined && { pagaCon }),
   };
 }
@@ -240,10 +231,6 @@ export function calculateOrderItems(
     if (catalogItem.disponible !== true) {
       throw new PublicOrderError('failed-precondition', 'Uno o más productos no están disponibles');
     }
-    if (catalogItem.jornada !== 'ambas' && catalogItem.jornada !== input.jornada) {
-      throw new PublicOrderError('failed-precondition', 'Uno o más productos no están disponibles en esta jornada');
-    }
-
     const rawPrice = requested.tipo === 'producto' ? catalogItem.precio : catalogItem.precioEspecial;
     if (!Number.isSafeInteger(rawPrice) || (rawPrice as number) <= 0) {
       throw new PublicOrderError('failed-precondition', 'El catálogo contiene un precio inválido');
@@ -384,7 +371,6 @@ export async function createPublicOrderInFirestore(
       tipoEntrega: 'domicilio',
       origen: 'web',
       estado: 'pendiente',
-      jornada: input.jornada,
       ...(input.pagaCon !== undefined && { pagaCon: input.pagaCon }),
       ...(context.authUid && { clienteUid: context.authUid }),
       ...(context.appId && { appId: context.appId }),

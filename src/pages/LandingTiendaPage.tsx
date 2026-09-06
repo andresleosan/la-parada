@@ -18,8 +18,6 @@ import {
   Send,
   Banknote,
   Phone,
-  Sun,
-  Moon,
 } from 'lucide-react';
 import {
   signInWithEmailAndPassword,
@@ -32,7 +30,7 @@ import {
 } from 'firebase/auth';
 import { auth } from '@/services/firebase';
 import { getProductos, getCombos } from '@/services/productosService';
-import { Producto, Combo, ItemVenta, Jornada, MetodoPago } from '@/types';
+import { Producto, Combo, ItemVenta, MetodoPago } from '@/types';
 import { DEFAULT_NEGOCIO_ID } from '@/types/negocio';
 import { createPublicOrder } from '@/services/publicOrderService';
 import { formatCOP } from '@/utils/formatCOP';
@@ -70,22 +68,13 @@ function getCategoryTag(nombre: string): { label: string; tagColor: string } {
   return { label: 'Especialidad', tagColor: 'bg-neutral-800 text-neutral-300 border-neutral-700' };
 }
 
-// Copy del hero por jornada: habla del bocado, no de la plataforma.
+// Copy único del hero: habla del bocado, no de la plataforma.
 const HERO_COPY = {
-  mañana: {
-    kicker: 'Turno de la mañana',
-    title: 'El día empieza',
-    accent: 'en la plancha.',
-    lead: 'Arepas rellenas, caldos y desayunos que se arman al momento. Pide desde aquí y sale caliente.',
-    marks: ['Masa del día', 'Desde las 7:00 a. m.', 'Efectivo o transferencia'],
-  },
-  noche: {
-    kicker: 'Turno de la noche',
-    title: 'Se parte. Estira.',
-    accent: 'Desaparece.',
-    lead: 'Tequeños, panceroti y parrilla que se preparan cuando tú los pides. Nada esperando bajo una lámpara.',
-    marks: ['Se prepara al pedirlo', 'Entrega coordinada', 'Efectivo o transferencia'],
-  },
+  kicker: 'Cocina abierta',
+  title: 'Se parte. Estira.',
+  accent: 'Desaparece.',
+  lead: 'Arepas, tequeños, panceroti y parrilla que se preparan cuando tú los pides. Nada esperando bajo una lámpara.',
+  marks: ['Se prepara al pedirlo', 'Entrega coordinada', 'Efectivo o transferencia'],
 } as const;
 
 function getCartLimitMessage(reason: StorefrontCartLimitReason): string {
@@ -97,13 +86,11 @@ function getCartLimitMessage(reason: StorefrontCartLimitReason): string {
 export function LandingTiendaPage() {
   const categoriasDB = usePublicCategorias();
   // Estados de Catálogo
-  const [jornada, setJornada] = useState<Jornada>('noche');
   const [categoriaActiva, setCategoriaActiva] = useState<string>('todos');
   const [busqueda, setBusqueda] = useState('');
   const [productos, setProductos] = useState<Producto[]>([]);
   const [combos, setCombos] = useState<Combo[]>([]);
   const [loadingMenu, setLoadingMenu] = useState(true);
-  const [jornadaPendiente, setJornadaPendiente] = useState<Jornada | null>(null);
 
   // Estados del Carrito
   const [carrito, setCarrito] = useState<ItemVenta[]>([]);
@@ -146,7 +133,7 @@ export function LandingTiendaPage() {
     return () => unsubscribe();
   }, []);
 
-  // Cargar menú según jornada
+  // Cargar el menú (uno solo, sin turnos)
   useEffect(() => {
     let isCurrentRequest = true;
 
@@ -154,8 +141,8 @@ export function LandingTiendaPage() {
       setLoadingMenu(true);
       try {
         const [prodsData, combosData] = await Promise.all([
-          getProductos(jornada, DEFAULT_NEGOCIO_ID),
-          getCombos(jornada, DEFAULT_NEGOCIO_ID),
+          getProductos(DEFAULT_NEGOCIO_ID),
+          getCombos(DEFAULT_NEGOCIO_ID),
         ]);
         if (!isCurrentRequest) return;
         setProductos(prodsData.filter((p) => p.disponible !== false));
@@ -171,31 +158,7 @@ export function LandingTiendaPage() {
     return () => {
       isCurrentRequest = false;
     };
-  }, [jornada]);
-
-  const aplicarCambioJornada = (nuevaJornada: Jornada) => {
-    if (nuevaJornada === jornada) return;
-
-    setProductos([]);
-    setCombos([]);
-    setLoadingMenu(true);
-    setJornada(nuevaJornada);
-    setCategoriaActiva('todos');
-    setBusqueda('');
-    pendingOrderRef.current = null;
-    setCarrito([]);
-    setCarritoAbierto(false);
-  };
-
-  const cambiarJornada = (nuevaJornada: Jornada) => {
-    if (nuevaJornada === jornada) return;
-    if (carrito.length > 0) {
-      setJornadaPendiente(nuevaJornada);
-      return;
-    }
-
-    aplicarCambioJornada(nuevaJornada);
-  };
+  }, []);
 
   // Carrito helpers
   const agregarAlCarrito = (tipo: 'producto' | 'combo', item: Producto | Combo) => {
@@ -462,7 +425,6 @@ export function LandingTiendaPage() {
         barrio: barrioCliente.trim(),
         ...(notasCliente.trim() && { notas: notasCliente.trim() }),
         metodoPago,
-        jornada: jornada as Exclude<Jornada, 'ambas'>,
         ...(pagaCon ? { pagaCon } : {}),
       };
       const fingerprint = JSON.stringify(orderData);
@@ -499,7 +461,7 @@ export function LandingTiendaPage() {
     }
   };
 
-  const heroCopy = HERO_COPY[jornada === 'mañana' ? 'mañana' : 'noche'];
+  const heroCopy = HERO_COPY;
 
   return (
     <div className="min-h-screen bg-restaurant-theme text-neutral-100 font-sans selection:bg-amber-500 selection:text-black relative overflow-x-hidden">
@@ -563,42 +525,8 @@ export function LandingTiendaPage() {
             </div>
           </Link>
 
-          {/* Selector de Turno + Auth + Carrito */}
+          {/* Auth + Carrito */}
           <div className="flex items-center gap-2 sm:gap-4">
-            {/* Selector Mañana / Noche */}
-            <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-1 flex text-xs">
-              <button
-                type="button"
-                id="menu-shift-morning"
-                onClick={() => cambiarJornada('mañana')}
-                aria-label="Ver menú de la mañana"
-                aria-pressed={jornada === 'mañana'}
-                className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-semibold transition-all ${
-                  jornada === 'mañana'
-                    ? 'bg-amber-500 text-neutral-950 shadow-sm'
-                    : 'text-neutral-400 hover:text-white'
-                }`}
-              >
-                <Sun size={14} aria-hidden="true" />
-                <span className="hidden sm:inline">Mañana</span>
-              </button>
-              <button
-                type="button"
-                id="menu-shift-night"
-                onClick={() => cambiarJornada('noche')}
-                aria-label="Ver menú de la noche"
-                aria-pressed={jornada === 'noche'}
-                className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-semibold transition-all ${
-                  jornada === 'noche'
-                    ? 'bg-amber-500 text-neutral-950 shadow-sm'
-                    : 'text-neutral-400 hover:text-white'
-                }`}
-              >
-                <Moon size={14} aria-hidden="true" />
-                <span className="hidden sm:inline">Noche</span>
-              </button>
-            </div>
-
             {/* Auth Button */}
             {clienteUser ? (
               <div className="flex items-center gap-2 bg-neutral-900 px-3 py-1.5 rounded-xl border border-neutral-800 text-xs">
@@ -659,7 +587,7 @@ export function LandingTiendaPage() {
 
       {/* 2. Hero Gastronómico */}
       <section className="relative isolate flex min-h-[460px] items-center overflow-hidden border-b border-neutral-800/80 px-4 py-14 sm:min-h-[520px] sm:px-6 sm:py-20 lg:px-8 lg:py-24">
-        <HeroVideo jornada={jornada} />
+        <HeroVideo />
 
         <div className="relative z-10 mx-auto grid w-full max-w-7xl grid-cols-1 items-center gap-8 lg:grid-cols-12">
           {/* Columna Izquierda: Copy Directo y Búsqueda */}
@@ -871,12 +799,6 @@ export function LandingTiendaPage() {
             ))}
           </div>
 
-          <span className="hidden min-w-max text-xs font-medium text-neutral-400 xl:inline">
-            Menú:{' '}
-            <strong className="text-amber-400">
-              {jornada === 'mañana' ? 'Mañana / Tarde' : 'Noche'}
-            </strong>
-          </span>
         </div>
       </section>
 
@@ -1238,12 +1160,8 @@ export function LandingTiendaPage() {
               <h4 className="font-display text-base font-black text-white">Horarios de Atención</h4>
               <ul className="text-xs text-neutral-300 space-y-1.5">
                 <li className="flex justify-between">
-                  <span className="text-neutral-400">Jornada Mañana:</span>
-                  <span className="font-semibold text-white">7:00 AM – 1:00 PM</span>
-                </li>
-                <li className="flex justify-between">
-                  <span className="text-neutral-400">Jornada Noche:</span>
-                  <span className="font-semibold text-white">6:00 PM – 11:30 PM</span>
+                  <span className="text-neutral-400">Atención:</span>
+                  <span className="font-semibold text-white">7:00 AM – 11:30 PM</span>
                 </li>
                 <li className="text-[11px] text-emerald-400 pt-1">
                   Abierto de Lunes a Domingo
@@ -1293,8 +1211,7 @@ export function LandingTiendaPage() {
         !carritoAbierto &&
         !modalCheckoutAbierto &&
         !pedidoExitoso &&
-        !modalAuthAbierto &&
-        !jornadaPendiente && (
+        !modalAuthAbierto && (
         <div
           className="fixed left-4 right-4 z-40 mx-auto max-w-md animate-in slide-in-from-bottom duration-300 xl:hidden"
           style={{ bottom: 'max(1rem, env(safe-area-inset-bottom))' }}
@@ -1432,54 +1349,6 @@ export function LandingTiendaPage() {
                 </button>
               </div>
             )}
-          </div>
-        </StorefrontDialog>
-      )}
-
-      {jornadaPendiente && (
-        <StorefrontDialog
-          labelledBy="change-menu-title"
-          onClose={() => setJornadaPendiente(null)}
-          returnFocusSelector={
-            jornadaPendiente === 'mañana' ? '#menu-shift-morning' : '#menu-shift-night'
-          }
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 backdrop-blur-sm"
-        >
-          <div className="w-full max-w-sm space-y-5 rounded-3xl border border-neutral-800 bg-neutral-900 p-6 text-center shadow-2xl">
-            <div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-amber-500/15 text-amber-400">
-              {jornadaPendiente === 'mañana' ? (
-                <Sun size={24} aria-hidden="true" />
-              ) : (
-                <Moon size={24} aria-hidden="true" />
-              )}
-            </div>
-            <div className="space-y-2">
-              <h2 id="change-menu-title" className="font-display text-xl font-black text-white">
-                ¿Cambiar al menú de {jornadaPendiente === 'mañana' ? 'la mañana' : 'la noche'}?
-              </h2>
-              <p className="text-sm leading-relaxed text-neutral-300">
-                Los productos cambian según el horario. Para evitar mezclar menús, vaciaremos tu
-                pedido actual.
-              </p>
-            </div>
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-              <Button type="button" variant="secondary" onClick={() => setJornadaPendiente(null)}>
-                Conservar pedido
-              </Button>
-              <Button
-                type="button"
-                variant="primary"
-                onClick={() => {
-                  const nuevaJornada = jornadaPendiente;
-                  setJornadaPendiente(null);
-                  aplicarCambioJornada(nuevaJornada);
-                  createToast('Pedido vacío. Ya puedes elegir productos del nuevo menú.', 'info');
-                }}
-                className="bg-amber-500 text-neutral-950 hover:bg-amber-400"
-              >
-                Vaciar y cambiar
-              </Button>
-            </div>
           </div>
         </StorefrontDialog>
       )}

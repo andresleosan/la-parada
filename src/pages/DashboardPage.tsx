@@ -25,12 +25,13 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { ValoresRapidos } from '@/components/ui/ValoresRapidos';
 import { Badge } from '@/components/ui/Badge';
-import { useJornada } from '@/context/JornadaContext';
 import { useReportes } from '@/hooks/useReportes';
+import { useHoraActual } from '@/hooks/useHoraActual';
 import { useDomicilios } from '@/hooks/useDomicilios';
 import { useCaja } from '@/hooks/useCaja';
 import { sumarIngresosCaja } from '@/services/cajaService';
 import { formatCOP } from '@/utils/formatCOP';
+import { formatHora } from '@/utils/dateUtils';
 import { createToast } from '@/components/ui/Toast';
 import { useNegocio } from '@/context/NegocioContext';
 import { parseFiniteNumber, validateNonNegativeAmount, validatePositiveAmount } from '@/utils/adminInputValidation';
@@ -41,7 +42,7 @@ import { Modal } from '@/components/ui/Modal';
 const ordenCategorias = ['gas', 'insumos', 'mantenimiento', 'otros', 'domiciliario', 'servicios', 'varios', 'salarios'];
 
 export function DashboardPage() {
-  const { jornadaActual } = useJornada();
+  const ahora = useHoraActual();
   const { negocioActual } = useNegocio();
   const { resumen, ventas, loading: loadingReportes, error: reportesError, refresh: refreshReportes } = useReportes();
   const {
@@ -50,7 +51,7 @@ export function DashboardPage() {
     loading: loadingDomicilios,
     error: domiciliosError,
     refresh: refreshDomicilios,
-  } = useDomicilios('ambas');
+  } = useDomicilios();
   const { cajaActual, loading: loadingCaja, error: cajaError, crearCajaHoy, refresh: refreshCaja, reiniciarCajaHoy } = useCaja();
   
   const [refreshing, setRefreshing] = useState(false);
@@ -69,12 +70,6 @@ export function DashboardPage() {
   const ayer = new Date();
   ayer.setDate(ayer.getDate() - 1);
   const pedidosAyer = countSalesOnDate(ventas, ayer);
-  const jornadaDashboardLabel = jornadaActual === 'mañana'
-    ? 'Mañana/Tarde'
-    : jornadaActual === 'noche'
-      ? 'Noche'
-      : 'Todo el día';
-
   // Calcular transferencias de hoy
   const ventasTransferencia = ventas
     .filter(v => {
@@ -193,7 +188,7 @@ export function DashboardPage() {
     <div className="min-h-screen bg-base-dark pb-24 pt-4 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto space-y-6">
         
-        {/* Header con Jornada y Acciones */}
+        {/* Header con hora y acciones */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-neutral-800">
           <div>
             <div className="flex items-center gap-3">
@@ -202,7 +197,7 @@ export function DashboardPage() {
               </h1>
               <Badge variant="outline" className="border-gold-400/40 bg-gold-400/10 text-gold-400 text-xs px-2.5 py-0.5">
                 <Clock className="w-3 h-3 mr-1 inline" />
-                {jornadaDashboardLabel}
+                <time dateTime={ahora.toISOString()}>{formatHora(ahora)}</time>
               </Badge>
             </div>
             <p className="text-xs sm:text-sm text-neutral-400 mt-1">

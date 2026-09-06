@@ -36,7 +36,7 @@ remove.bg permanece únicamente en Secret Manager.
 - Un pedido válido crea exactamente un `domicilio` y devuelve código `LP-*` con total de servidor.
 - Repetir el mismo envío devuelve el mismo código y no duplica el documento.
 - Cambiar precio/total desde DevTools no altera el total; esos campos ni siquiera son aceptados.
-- Un producto deshabilitado, de otra jornada o tenant se rechaza.
+- Un producto deshabilitado o de otro tenant se rechaza.
 - Una solicitud sin App Check y una escritura directa a Firestore se rechazan.
 - Efectivo y transferencia manual funcionan; no aparece ningún proveedor o enlace de pago.
 

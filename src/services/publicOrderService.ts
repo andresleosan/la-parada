@@ -1,5 +1,5 @@
 import { httpsCallable } from 'firebase/functions';
-import type { Jornada, MetodoPago } from '@/types';
+import type { MetodoPago } from '@/types';
 import { appCheckConfigured, functions } from './firebase';
 
 export interface PublicOrderRequest {
@@ -16,7 +16,6 @@ export interface PublicOrderRequest {
   barrio: string;
   notas?: string;
   metodoPago: MetodoPago;
-  jornada: Exclude<Jornada, 'ambas'>;
   pagaCon?: number;
 }
 

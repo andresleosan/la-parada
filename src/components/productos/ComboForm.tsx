@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Combo, ComboItem, Jornada } from '../../types';
+import { Combo, ComboItem } from '../../types';
 import { Input } from '../ui/Input';
 import { Textarea } from '../ui/Textarea';
-import { Select } from '../ui/Select';
 import { Button } from '../ui/Button';
 import { FormModal } from './FormModal';
 import { CheckCircle2, Heart, Image as ImageIcon, Layers3, Tag, Trash2, X } from 'lucide-react';
@@ -35,7 +34,6 @@ export const ComboForm: React.FC<ComboFormProps> = ({
   const [precioStr, setPrecioStr] = useState(
     initialData?.precioEspecial ? initialData.precioEspecial.toString() : ''
   );
-  const [jornada, setJornada] = useState<Jornada>(initialData?.jornada || 'ambas');
   const [disponible, setDisponible] = useState(initialData?.disponible !== false);
   const [destacado, setDestacado] = useState(Boolean(initialData?.destacado));
   const [imagenUrl, setImagenUrl] = useState(initialData?.imagenUrl || '');
@@ -51,7 +49,6 @@ export const ComboForm: React.FC<ComboFormProps> = ({
     setDescripcion(initialData?.descripcion || '');
     setCategoria(initialData?.categoria || 'Combos');
     setPrecioStr(initialData?.precioEspecial?.toString() || '');
-    setJornada(initialData?.jornada || 'ambas');
     setDisponible(initialData?.disponible !== false);
     setDestacado(Boolean(initialData?.destacado));
     setImagenUrl(initialData?.imagenUrl || '');
@@ -113,7 +110,6 @@ export const ComboForm: React.FC<ComboFormProps> = ({
         categoria: categoria.trim() || 'Combos',
         precioEspecial,
         items,
-        jornada,
         disponible,
         destacado,
         imagenUrl: imagenUrl || undefined,
@@ -127,7 +123,6 @@ export const ComboForm: React.FC<ComboFormProps> = ({
       setCategoria('Combos');
       setPrecioStr('');
       setImagenUrl('');
-      setJornada('ambas');
       setDisponible(true);
       setDestacado(false);
       setItems([]);
@@ -228,21 +223,6 @@ export const ComboForm: React.FC<ComboFormProps> = ({
         placeholder="Ej: 38000"
         error={errors.precio}
       />
-
-      <Select
-        label="Jornada"
-        value={jornada}
-        onChange={(e) => setJornada(e.target.value as Jornada)}
-        options={[
-          { value: 'mañana', label: 'Mañana/Tarde' },
-          { value: 'noche', label: 'Noche' },
-          { value: 'ambas', label: 'Ambas jornadas' },
-        ]}
-      >
-        <option value="mañana">Mañana/Tarde</option>
-        <option value="noche">Noche</option>
-        <option value="ambas">Ambas jornadas</option>
-      </Select>
 
       {/* Sección de Imagen */}
       <div className="space-y-3 rounded-2xl border border-amber-500/20 bg-neutral-900/60 p-4">

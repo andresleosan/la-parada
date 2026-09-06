@@ -11,7 +11,7 @@ import { requireTenantId } from '@/security/tenantScope';
 
 type BotConfigUpdates = Pick<
   ConfiguracionBot,
-  'activo' | 'mensajeBienvenida' | 'mensajeCierre' | 'jornadaActiva' | 'ultimaActualizacion'
+  'activo' | 'mensajeBienvenida' | 'mensajeCierre' | 'ultimaActualizacion'
 >;
 
 function assertOfflineBotMessage(value: unknown): void {

@@ -51,7 +51,6 @@ describe.runIf(EMULATOR_AVAILABLE)('integración del backend de pedidos público
       direccion: 'Calle 10 # 20-30',
       barrio: 'Centro',
       metodoPago: 'efectivo',
-      jornada: 'noche',
       ...overrides,
     });
 
@@ -63,7 +62,6 @@ describe.runIf(EMULATOR_AVAILABLE)('integración del backend de pedidos público
       nombre: 'Producto seguro',
       negocioId: 'laparada',
       disponible: true,
-      jornada: 'ambas',
       precio: 12_000,
       ...overrides,
     });

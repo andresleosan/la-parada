@@ -99,7 +99,6 @@ function buildValidSale(negocioId: string) {
     metodoPago: 'efectivo',
     tipoEntrega: 'mostrador',
     origen: 'pos',
-    jornada: 'noche',
     fecha: new Date(0),
   };
 }

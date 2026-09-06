@@ -48,7 +48,7 @@ promocional, sin perder el carácter oscuro y amarillo de La Parada.
 ### Backoffice administrativo — UX-002
 
 Dirección definida el 2026-09-04: **cabina operativa + superficie de trabajo legible**. El panel
-debe permitir cambiar de módulo, reconocer jornada y negocio, y ejecutar la siguiente acción sin
+debe permitir cambiar de módulo, reconocer la hora y el negocio, y ejecutar la siguiente acción sin
 depender de un dock flotante ni de memorizar iconos.
 
 - **Referencias Mobbin:** [Fresha](https://mobbin.com/screens/bcbc7fb0-545b-42c7-9451-608eef1f5747)
@@ -70,7 +70,7 @@ depender de un dock flotante ni de memorizar iconos.
 - **Layout:** sidebar persistente en escritorio, barra contextual superior y una secuencia común
   `acción principal → métricas breves → búsqueda/filtros → tabla, lista o tablero`. En móvil se
   conservan cuatro destinos principales y una hoja accesible para el resto.
-- **Elemento firma:** pulso operativo compacto en la cabecera con módulo, jornada y negocio visibles.
+- **Elemento firma:** pulso operativo compacto en la cabecera con módulo, hora y negocio visibles.
 - **Defaults evitados:** dock flotante de nueve destinos en escritorio; grandes superficies negras
   vacías; emojis como iconos; tarjetas para cada fila administrativa; acciones destructivas con
   copy ambiguo.
@@ -121,11 +121,11 @@ El cliente podrá enviar únicamente:
 - items con `tipo`, `referenciaId` y `cantidad`;
 - `clienteNombre`, `clienteTelefono`, `direccion`, `barrio` y `notas` opcionales según límites;
 - `metodoPago` dentro de los dos valores offline.
-- `jornada` solicitada y, para efectivo, `pagaCon` opcional como dato logístico de cambio.
+- para efectivo, `pagaCon` opcional como dato logístico de cambio.
 
 El backend deberá obtener del catálogo `nombre`, disponibilidad y precio; recalcular items,
-subtotal, costo de domicilio, descuentos autorizados y total; fijar `origen`, `estado`, jornada y
-timestamps. Debe ignorar cualquier precio, total, estado o snapshot enviado por el navegador.
+subtotal, costo de domicilio, descuentos autorizados y total; fijar `origen`, `estado` y
+timestamps (la hora del pedido queda en el timestamp, no en un campo de turno). Debe ignorar cualquier precio, total, estado o snapshot enviado por el navegador.
 
 ### Persistencia objetivo
 

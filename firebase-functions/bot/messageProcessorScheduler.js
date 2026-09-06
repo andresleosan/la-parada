@@ -63,14 +63,10 @@ function configuredMessage(value, fallback, maxLength) {
 async function getBotRuntimeConfig(negocioId) {
     const snapshot = await getDb().collection('configuracion').doc(negocioId).get();
     const data = snapshot.data();
-    const jornadaActiva = data?.jornadaActiva;
     return {
         activo: data?.negocioId === negocioId && data?.activo === true,
         mensajeBienvenida: configuredMessage(data?.mensajeBienvenida, (0, whatsappBotService_1.renderAutoRespuesta)('BIENVENIDA'), 4096),
         mensajeCierre: configuredMessage(data?.mensajeCierre, 'Gracias por tu pedido. ¡Hasta pronto!', 1000),
-        jornadaActiva: jornadaActiva === 'mañana' || jornadaActiva === 'noche' || jornadaActiva === 'ambas'
-            ? jornadaActiva
-            : 'ambas',
     };
 }
 /**
@@ -132,14 +128,6 @@ async function procesarUnMensaje(mensaje, runtimeConfig) {
         return;
     }
     const config = runtimeConfig || await getBotRuntimeConfig(negocioId);
-    const currentJourney = new Date().getHours() < 14 ? 'mañana' : 'noche';
-    if (config.jornadaActiva !== 'ambas' && config.jornadaActiva !== currentJourney) {
-        const respuestaFueraDeJornada = 'En este momento el bot está fuera de su jornada de atención. Un agente podrá responderte manualmente.';
-        await (0, whatsappBotService_1.guardarResultadoQueue)(queueId, 'fuera_de_jornada', respuestaFueraDeJornada);
-        await (0, whatsappBotService_1.enviarRespuestaQueue)(mensaje, respuestaFueraDeJornada);
-        await (0, whatsappBotService_1.marcarMensajeProcesado)(queueId, 'fuera_de_jornada');
-        return;
-    }
     // Determinar intención del usuario
     const contenidoLower = contenido.toLowerCase();
     let accion;

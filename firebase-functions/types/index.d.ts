@@ -57,7 +57,6 @@ export interface Venta {
     origen: 'pos' | 'whatsapp' | 'phone' | 'domicilio';
     metodoPago: string;
     estado?: string;
-    jornada?: string;
     domicilio?: boolean;
 }
 /**
@@ -72,7 +71,6 @@ export interface Domicilio {
     referencia?: string;
     monto: number;
     estado: 'confirmado' | 'en_preparacion' | 'listo' | 'en_camino' | 'entregado' | 'cancelado';
-    jornada?: 'mañana' | 'noche';
     domiciliarioId?: string;
     creadoEn?: Timestamp;
     entregadoEn?: Timestamp;

@@ -16,7 +16,6 @@ function validPayload(overrides: Record<string, unknown> = {}) {
     direccion: 'Calle 10 # 20-30',
     barrio: 'Centro',
     metodoPago: 'efectivo',
-    jornada: 'noche',
     ...overrides,
   };
 }
@@ -54,7 +53,6 @@ describe('contrato de pedidos públicos', () => {
             nombre: 'Hamburguesa de la casa',
             negocioId: 'laparada',
             disponible: true,
-            jornada: 'ambas',
             precio: 18_000,
           },
         ],
@@ -80,7 +78,6 @@ describe('contrato de pedidos públicos', () => {
               nombre: 'Producto ajeno',
               negocioId: 'tenant-b',
               disponible: true,
-              jornada: 'noche',
               precio: 1_000,
             },
           ],
@@ -89,7 +86,7 @@ describe('contrato de pedidos públicos', () => {
     ).toThrow(/no pertenece/);
   });
 
-  it('rechaza productos no disponibles o fuera de jornada', () => {
+  it('rechaza productos que no están disponibles', () => {
     expect(() =>
       calculateOrderItems(
         validInput(),
@@ -97,16 +94,15 @@ describe('contrato de pedidos públicos', () => {
           [
             'producto:hamburguesa-1',
             {
-              nombre: 'Producto de mañana',
+              nombre: 'Producto agotado',
               negocioId: 'laparada',
-              disponible: true,
-              jornada: 'mañana',
+              disponible: false,
               precio: 1_000,
             },
           ],
         ])
       )
-    ).toThrow(/jornada/);
+    ).toThrow(/no están disponibles/);
   });
 
   it('valida el monto de cambio contra el total calculado', () => {
@@ -120,7 +116,6 @@ describe('contrato de pedidos públicos', () => {
               nombre: 'Hamburguesa',
               negocioId: 'laparada',
               disponible: true,
-              jornada: 'noche',
               precio: 18_000,
             },
           ],

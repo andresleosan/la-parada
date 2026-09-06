@@ -3,11 +3,6 @@ import { Timestamp } from 'firebase/firestore';
 export * from './negocio';
 
 /**
- * Jornada: período del día en que opera La Parada
- */
-export type Jornada = 'mañana' | 'noche' | 'ambas';
-
-/**
  * Origen de la venta: punto físico (POS), WhatsApp o Tienda Web
  */
 export type OrigenVenta = 'pos' | 'whatsapp' | 'web';
@@ -57,7 +52,6 @@ export interface Producto {
   descripcion: string;
   categoria?: string;       // Categoría (ej: Tequeños, Pancerotis, Hamburguesas, etc.)
   precio: number;           // En COP, valor entero
-  jornada: Jornada;
   disponible: boolean;
   destacado?: boolean;      // Marcado como favorito/destacado para la tienda
   imagenUrl?: string;
@@ -86,7 +80,6 @@ export interface Combo {
   descripcion: string;
   items: ComboItem[];
   precioEspecial: number;  // En COP, valor entero
-  jornada: Jornada;
   disponible: boolean;
   destacado?: boolean;     // Marcado como favorito/destacado para la tienda
   imagenUrl?: string;
@@ -117,7 +110,7 @@ export interface Venta {
   metodoPago: MetodoPago;
   tipoEntrega?: TipoEntrega;
   origen: OrigenVenta;
-  jornada: Jornada;
+  /** Fecha y hora exacta del cobro. Es la única fuente de la hora de la venta. */
   fecha: Timestamp;
   domicilioId?: string;    // Si fue entregado como domicilio
   direccion?: string;      // Dirección si es domicilio
@@ -141,7 +134,6 @@ export interface Domicilio {
   metodoPago: MetodoPago;
   origen: OrigenVenta;
   estado: EstadoDomicilio;
-  jornada: 'mañana' | 'noche';
   domiciliarioId?: string;
   notas?: string;
   creadoEn: Timestamp;
@@ -186,18 +178,16 @@ export interface Gasto {
   concepto: string;
   monto: number;           // En COP, valor entero
   categoria: CategoriaGasto;
-  jornada: Jornada;
   fecha: Timestamp;
   notas?: string;
   negocioId: string;       // ID del negocio / tenant
 }
 
 /**
- * Cierre de caja de una jornada
+ * Cierre de caja del día
  */
 export interface CierreCaja {
   id: string;
-  jornada: Jornada;
   fecha: Timestamp;
   totalIngresos: number;   // En COP, valor entero
   totalGastos: number;     // En COP, valor entero
@@ -208,11 +198,10 @@ export interface CierreCaja {
 }
 
 /**
- * Caja de dinero en efectivo de una jornada
+ * Caja de dinero en efectivo del día
  */
 export interface Caja {
   id: string;
-  jornada: Jornada;
   fecha: Timestamp;
   montoInicial: number;    // En COP, valor entero
   ingresos: number;        // En COP, valor entero (ventas en efectivo)
@@ -229,7 +218,6 @@ export interface ConfiguracionBot {
   activo: boolean;
   mensajeBienvenida: string;
   mensajeCierre: string;
-  jornadaActiva: Jornada;
   ultimaActualizacion: Timestamp;
 }
 

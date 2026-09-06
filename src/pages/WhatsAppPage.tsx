@@ -91,7 +91,7 @@ export function WhatsAppPage() {
     setLoadingPedidos(true);
     setPedidosError(null);
     try {
-      const data = await getDomiciliosActivos('ambas', scopeTenantId);
+      const data = await getDomiciliosActivos(scopeTenantId);
       if (generation !== pedidosGenerationRef.current) return;
       setPedidos(data);
     } catch (err) {

@@ -29,7 +29,7 @@ la-parada/
 │   │   ├── domicilios/            # Componentes de domicilios
 │   │   └── reportes/              # Componentes de reportes
 │   ├── 📄 pages/                  # Páginas/Vistas
-│   ├── 🔗 context/                # Context API (Auth, Bot, Jornada)
+│   ├── 🔗 context/                # Context API (Auth, Negocio)
 │   ├── 🪝 hooks/                  # Hooks personalizados
 │   ├── 🛠️ services/               # Servicios (Firebase, APIs)
 │   │   └── firebase.ts            # Configuración de Firebase

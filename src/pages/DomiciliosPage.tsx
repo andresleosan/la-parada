@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from 'react';
-import { useJornada } from '../context/JornadaContext';
 import { useDomicilios } from '../hooks/useDomicilios';
 import { DomicilioCard } from '../components/domicilios/DomicilioCard';
 import { EmptyState } from '../components/ui/EmptyState';
@@ -10,10 +9,9 @@ import { useNegocio } from '@/context/NegocioContext';
 import { AlertCircle, CheckCircle, CircleDot, Package } from 'lucide-react';
 
 export const DomiciliosPage: React.FC = () => {
-  const { jornadaActual } = useJornada();
   const { negocioActual } = useNegocio();
   const { activos, entregados, loading, error, updateEstado, marcarEntregado, refresh } =
-    useDomicilios(jornadaActual);
+    useDomicilios();
 
   const [tab, setTab] = useState<'activos' | 'historial'>('activos');
   const [updatingId, setUpdatingId] = useState<string | null>(null);
@@ -22,7 +20,7 @@ export const DomiciliosPage: React.FC = () => {
 
   // Listener para nuevos domicilios (alerta sonora)
   useEffect(() => {
-    const unsubscribe = onNuevoDomicilio(jornadaActual, negocioActual.id, (domicilio) => {
+    const unsubscribe = onNuevoDomicilio(negocioActual.id, (domicilio) => {
       // Evitar duplicados: solo reproducir si es realmente nuevo
       if (!playedNotifications.current.has(domicilio.id)) {
         playedNotifications.current.add(domicilio.id);
@@ -43,7 +41,7 @@ export const DomiciliosPage: React.FC = () => {
     });
 
     return () => unsubscribe();
-  }, [jornadaActual, negocioActual.id]);
+  }, [negocioActual.id]);
 
   const handleEstadoChange = async (domicilioId: string, nuevoEstado: string) => {
     setUpdatingId(domicilioId);
@@ -155,7 +153,7 @@ export const DomiciliosPage: React.FC = () => {
             description={
               tab === 'activos'
                 ? 'Todos los pedidos a domicilio han sido despachados'
-                : 'No hay pedidos creados hoy que ya estén entregados en esta jornada'
+                : 'No hay pedidos creados hoy que ya estén entregados'
             }
             action={{ label: 'Refrescar', onClick: refresh }}
           />

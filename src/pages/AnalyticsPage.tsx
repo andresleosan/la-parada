@@ -10,20 +10,23 @@ import {
 } from 'recharts';
 import {
   AlertCircle,
-  CalendarDays,
   Clock,
   DollarSign,
   RefreshCw,
   ShoppingBag,
-  Sunrise,
-  Moon,
 } from 'lucide-react';
 import { useReportes } from '@/hooks/useReportes';
 import {
   buildChannelMix,
   buildHourlySales,
   buildProductPerformance,
-  type AnalyticsShift,
+  clampHour,
+  describeHourRange,
+  filterSalesByHourRange,
+  formatHourLabel,
+  FULL_DAY_RANGE,
+  isFullDayRange,
+  type HourRange,
 } from '@/utils/adminAnalytics';
 import { formatCOP } from '@/utils/formatCOP';
 import { Button } from '@/components/ui/Button';
@@ -32,29 +35,19 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { StatsCard } from '@/components/reportes/StatsCard';
 
-const shiftOptions: Array<{
-  value: AnalyticsShift;
-  label: string;
-  icon: typeof CalendarDays;
-}> = [
-  { value: 'todas', label: 'Todas', icon: CalendarDays },
-  { value: 'mañana', label: 'Mañana/Tarde', icon: Sunrise },
-  { value: 'noche', label: 'Noche', icon: Moon },
-];
+const HOUR_OPTIONS = Array.from({ length: 24 }, (_, hour) => hour);
 
 export default function AnalyticsPage() {
   const { ventas, loading, error, refresh } = useReportes();
-  const [jornadaFiltro, setJornadaFiltro] = useState<AnalyticsShift>('todas');
+  const [franja, setFranja] = useState<HourRange>(FULL_DAY_RANGE);
 
   const ventasFiltradas = useMemo(
-    () => jornadaFiltro === 'todas'
-      ? ventas
-      : ventas.filter((venta) => venta.jornada === jornadaFiltro),
-    [jornadaFiltro, ventas]
+    () => filterSalesByHourRange(ventas, franja),
+    [franja, ventas]
   );
   const demandaHoraria = useMemo(
-    () => buildHourlySales(ventas, jornadaFiltro),
-    [jornadaFiltro, ventas]
+    () => buildHourlySales(ventas, franja),
+    [franja, ventas]
   );
   const productos = useMemo(
     () => buildProductPerformance(ventasFiltradas).slice(0, 6),
@@ -116,32 +109,59 @@ export default function AnalyticsPage() {
             </div>
             <h1 className="font-display text-2xl font-black text-white sm:text-3xl">Analytics operativo</h1>
             <p className="mt-1 max-w-2xl text-sm text-neutral-400">
-              Ventas reales de los últimos 30 días. No incluye pronósticos ni márgenes sin respaldo de costos.
+              Ventas reales de los últimos 30 días, agrupadas por la hora exacta en que se
+              registraron. No incluye pronósticos ni márgenes sin respaldo de costos.
+            </p>
+            <p className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-neutral-800 bg-neutral-900 px-2.5 py-1 text-xs font-bold text-neutral-300">
+              <Clock className="h-3.5 w-3.5 text-gold-400" aria-hidden="true" />
+              {describeHourRange(franja)}
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="flex rounded-xl border border-neutral-800 bg-neutral-900 p-1" aria-label="Filtrar analytics por jornada">
-              {shiftOptions.map((option) => {
-                const Icon = option.icon;
-                const active = jornadaFiltro === option.value;
-                return (
-                  <button
-                    key={option.value}
-                    type="button"
-                    onClick={() => setJornadaFiltro(option.value)}
-                    aria-pressed={active}
-                    className={`flex min-h-10 items-center gap-1.5 rounded-lg px-3 text-xs font-bold ${
-                      active ? 'bg-gold-400 text-base-dark' : 'text-neutral-400 hover:bg-neutral-800 hover:text-white'
-                    }`}
-                  >
-                    <Icon className="h-3.5 w-3.5" aria-hidden="true" />
-                    <span className="hidden sm:inline">{option.label}</span>
-                    <span className="sm:hidden">{option.value === 'todas' ? 'Todas' : option.value === 'mañana' ? 'Día' : 'Noche'}</span>
-                  </button>
-                );
-              })}
-            </div>
+          <div className="flex flex-wrap items-end gap-2">
+            <fieldset className="flex items-end gap-2 rounded-xl border border-neutral-800 bg-neutral-900 p-2">
+              <legend className="px-1 text-[10px] font-bold uppercase tracking-wider text-neutral-500">
+                Franja horaria
+              </legend>
+              <label className="flex flex-col gap-1 text-[10px] font-bold uppercase tracking-wider text-neutral-500">
+                Desde
+                <select
+                  value={franja.desde}
+                  onChange={(event) =>
+                    setFranja((actual) => ({ ...actual, desde: clampHour(Number(event.target.value)) }))
+                  }
+                  className="min-h-10 rounded-lg border border-neutral-700 bg-neutral-950 px-2 text-xs font-bold text-white"
+                >
+                  {HOUR_OPTIONS.map((hour) => (
+                    <option key={hour} value={hour}>{formatHourLabel(hour)}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="flex flex-col gap-1 text-[10px] font-bold uppercase tracking-wider text-neutral-500">
+                Hasta
+                <select
+                  value={franja.hasta}
+                  onChange={(event) =>
+                    setFranja((actual) => ({ ...actual, hasta: clampHour(Number(event.target.value)) }))
+                  }
+                  className="min-h-10 rounded-lg border border-neutral-700 bg-neutral-950 px-2 text-xs font-bold text-white"
+                >
+                  {HOUR_OPTIONS.map((hour) => (
+                    <option key={hour} value={hour}>{`${String(hour).padStart(2, '0')}:59`}</option>
+                  ))}
+                </select>
+              </label>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setFranja(FULL_DAY_RANGE)}
+                disabled={isFullDayRange(franja)}
+                aria-label="Ver el día completo"
+                className="text-xs"
+              >
+                Todo el día
+              </Button>
+            </fieldset>
             <Button variant="secondary" size="sm" onClick={refresh} aria-label="Actualizar analytics">
               <RefreshCw className="h-4 w-4" aria-hidden="true" />
               <span className="hidden sm:inline">Actualizar</span>
@@ -180,10 +200,12 @@ export default function AnalyticsPage() {
           <Card className="rounded-2xl p-4 sm:p-5">
             <div className="mb-4">
               <h2 className="text-base font-bold text-white">Pedidos por hora</h2>
-              <p className="text-xs text-neutral-400">Distribución de órdenes con fecha válida.</p>
+              <p className="text-xs text-neutral-400">
+                Distribución por hora de registro, dentro de {describeHourRange(franja)}.
+              </p>
             </div>
             {demandaHoraria.length === 0 ? (
-              <EmptyState title="Sin actividad para esta jornada" description="Cuando registres ventas aparecerá la distribución horaria." />
+              <EmptyState title="Sin actividad en esta franja" description="Cuando registres ventas aparecerá la distribución horaria." />
             ) : (
               <div role="img" aria-label="Gráfico de pedidos reales agrupados por hora">
                 <ResponsiveContainer width="100%" height={280}>

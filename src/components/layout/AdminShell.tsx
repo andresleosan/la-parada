@@ -2,8 +2,9 @@ import type { ReactNode } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { LogOut, Store, UserRound } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
-import { useJornada } from '@/context/JornadaContext';
 import { useNegocio } from '@/context/NegocioContext';
+import { useHoraActual } from '@/hooks/useHoraActual';
+import { formatHora } from '@/utils/dateUtils';
 import { BottomNav } from './BottomNav';
 import {
   getAdminRouteMeta,
@@ -15,17 +16,11 @@ interface AdminShellProps {
   children: ReactNode;
 }
 
-function jornadaLabel(jornada: 'mañana' | 'noche' | 'ambas') {
-  if (jornada === 'mañana') return 'Mañana';
-  if (jornada === 'noche') return 'Noche';
-  return 'Todo el día';
-}
-
 export function AdminShell({ children }: AdminShellProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const { logout } = useAuth();
-  const { jornadaActual } = useJornada();
+  const ahora = useHoraActual();
   const { negocioActual, esSuperAdmin, usuarioNegocio } = useNegocio();
   const routeMeta = getAdminRouteMeta(location.pathname);
   const navigation = getVisibleAdminNavigation({
@@ -158,7 +153,7 @@ export function AdminShell({ children }: AdminShellProps) {
             <div className="flex shrink-0 items-center gap-2">
               <div className="hidden items-center gap-2 rounded-full border border-[#ddd7ca] bg-white px-3 py-2 text-xs font-bold text-[#5f5a50] sm:flex">
                 <span className="h-2 w-2 rounded-full bg-[#168a5b]" aria-hidden="true" />
-                Jornada {jornadaLabel(jornadaActual)}
+                <time dateTime={ahora.toISOString()}>{formatHora(ahora)}</time>
               </div>
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#201f1b] text-white sm:w-auto sm:gap-2 sm:px-3">
                 <UserRound className="h-4 w-4" aria-hidden="true" />

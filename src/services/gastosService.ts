@@ -13,7 +13,7 @@ import {
   Timestamp,
 } from 'firebase/firestore';
 import { db } from './firebase';
-import { Gasto, CategoriaGasto, Jornada } from '../types';
+import { Gasto, CategoriaGasto } from '../types';
 import { requireTenantId } from '@/security/tenantScope';
 
 async function assertGastoTenant(id: string, negocioId: string): Promise<string> {
@@ -77,32 +77,6 @@ export async function eliminarGasto(id: string, negocioId: string): Promise<void
   } catch (error) {
     console.error('Error deleting gasto:', error);
     throw error;
-  }
-}
-
-/**
- * Obtener gastos de una jornada específica
- */
-export async function getGastosPorJornada(
-  negocioId: string,
-  jornada: Jornada
-): Promise<Gasto[]> {
-  try {
-    const gastosRef = collection(db, 'gastos');
-    const q = query(
-      gastosRef,
-      where('negocioId', '==', requireTenantId(negocioId)),
-      where('jornada', '==', jornada),
-      orderBy('fecha', 'desc')
-    );
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map((doc) => ({
-      ...doc.data(),
-      id: doc.id,
-    } as Gasto));
-  } catch (error) {
-    console.error('Error fetching gastos por jornada:', error);
-    return [];
   }
 }
 

@@ -1,6 +1,6 @@
 // src/hooks/useProductos.ts
 import { useState, useEffect, useRef } from 'react';
-import type { Producto, Combo, Jornada } from '@/types';
+import type { Producto, Combo } from '@/types';
 import {
   getProductos,
   getCombos,
@@ -19,10 +19,10 @@ interface UseProductosReturn {
 }
 
 /**
- * Hook para obtener productos y combos de una jornada
+ * Hook para obtener el catálogo de productos y combos
  * Aislado automáticamente por el negocioActual (Multi-Tenant)
  */
-export function useProductos(jornada: Jornada): UseProductosReturn {
+export function useProductos(): UseProductosReturn {
   const { negocioActual } = useNegocio();
   const [productos, setProductos] = useState<Producto[]>([]);
   const [combos, setCombos] = useState<Combo[]>([]);
@@ -30,7 +30,7 @@ export function useProductos(jornada: Jornada): UseProductosReturn {
   const [error, setError] = useState<Error | null>(null);
 
   const tenantId = negocioActual.id;
-  const scopeKey = `${tenantId}:${jornada}`;
+  const scopeKey = tenantId;
   const activeScopeRef = useRef(scopeKey);
   const refreshGuardRef = useRef(createScopedRequestGuard());
   activeScopeRef.current = scopeKey;
@@ -43,7 +43,7 @@ export function useProductos(jornada: Jornada): UseProductosReturn {
     let unsubscribeCombos: (() => void) | null = null;
     let cancelled = false;
 
-    Promise.all([getProductos(jornada, tenantId), getCombos(jornada, tenantId)])
+    Promise.all([getProductos(tenantId), getCombos(tenantId)])
       .then(([prods, combs]) => {
         if (cancelled) return;
         setProductos(prods);
@@ -51,10 +51,10 @@ export function useProductos(jornada: Jornada): UseProductosReturn {
         setLoading(false);
 
         // Configurar listeners en tiempo real
-        unsubscribeProductos = onProductosChange(jornada, tenantId, (rawProds) => {
+        unsubscribeProductos = onProductosChange(tenantId, (rawProds) => {
           if (!cancelled) setProductos(rawProds);
         });
-        unsubscribeCombos = onCombosChange(jornada, tenantId, (rawCombs) => {
+        unsubscribeCombos = onCombosChange(tenantId, (rawCombs) => {
           if (!cancelled) setCombos(rawCombs);
         });
       })
@@ -70,15 +70,15 @@ export function useProductos(jornada: Jornada): UseProductosReturn {
       unsubscribeProductos?.();
       unsubscribeCombos?.();
     };
-  }, [jornada, tenantId]);
+  }, [tenantId]);
 
   const refresh = async () => {
     const request = refreshGuardRef.current.begin(scopeKey);
     try {
       setLoading(true);
       const [prods, combs] = await Promise.all([
-        getProductos(jornada, tenantId),
-        getCombos(jornada, tenantId),
+        getProductos(tenantId),
+        getCombos(tenantId),
       ]);
       if (!refreshGuardRef.current.isCurrent(request, activeScopeRef.current)) return;
       setProductos(prods);

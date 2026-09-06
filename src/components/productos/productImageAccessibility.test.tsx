@@ -32,7 +32,6 @@ describe('eliminación accesible de fotos del catálogo', () => {
           negocioId: 'laparada',
           nombre: 'Tequeño',
           precio: 3500,
-          jornada: 'ambas',
           disponible: true,
           imagenUrl: 'https://example.com/tequeno.jpg',
         } as Producto}
@@ -57,7 +56,6 @@ describe('eliminación accesible de fotos del catálogo', () => {
           categoria: 'Combos',
           precioEspecial: 38000,
           items: [{ productoId: 'producto-1', cantidad: 2, nombreSnapshot: 'Tequeño' }],
-          jornada: 'ambas',
           disponible: true,
           imagenUrl: 'https://example.com/combo.jpg',
         } as Combo}

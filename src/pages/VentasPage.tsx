@@ -17,6 +17,7 @@ import {
   CalendarDays,
   CalendarRange,
   CircleDollarSign,
+  Clock,
   Globe2,
   History,
   Image,
@@ -42,7 +43,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { createToast } from '@/components/ui/Toast';
 import { StorefrontDialog } from '@/components/storefront/StorefrontDialog';
 import { formatCOP } from '@/utils/formatCOP';
-import { formatFechaCorta } from '@/utils/dateUtils';
+import { formatFechaLarga, formatHora } from '@/utils/dateUtils';
 import { toValidAdminDate } from '@/utils/adminAnalytics';
 import {
   buildAdminReportSummary,
@@ -101,9 +102,15 @@ function getPresentation(
   };
 }
 
-function formatSaleDate(value: unknown): string {
+/** Fecha y hora de la venta, tomadas del mismo timestamp con que quedó registrada. */
+function getSaleMoment(value: unknown): { fecha: string; hora: string; iso?: string } {
   const date = toValidAdminDate(value);
-  return date ? formatFechaCorta(date) : 'Fecha no disponible';
+  if (!date) return { fecha: 'Fecha no disponible', hora: '--:--' };
+  return {
+    fecha: formatFechaLarga(date),
+    hora: formatHora(date),
+    iso: date.toISOString(),
+  };
 }
 
 export function VentasPeriodFilter({ filter, onChange }: VentasPeriodFilterProps) {
@@ -364,6 +371,7 @@ export function VentasPage() {
                   const payment = getPresentation(paymentPresentations, venta.metodoPago, CircleDollarSign);
                   const OriginIcon = origin.icon;
                   const PaymentIcon = payment.icon;
+                  const momento = getSaleMoment(venta.fecha);
 
                   return (
                     <Card
@@ -372,9 +380,13 @@ export function VentasPage() {
                     >
                       <div>
                         <div className="flex flex-col gap-2 border-b border-neutral-800 pb-3 sm:flex-row sm:items-start sm:justify-between">
-                          <span className="text-sm font-semibold text-white">
-                            {formatSaleDate(venta.fecha)}
-                          </span>
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold text-white">{momento.fecha}</p>
+                            <p className="mt-0.5 flex items-center gap-1 text-xs font-bold text-gold-400">
+                              <Clock className="h-3.5 w-3.5" aria-hidden="true" />
+                              <time dateTime={momento.iso}>{momento.hora}</time>
+                            </p>
+                          </div>
                           <div className="flex flex-wrap gap-1.5">
                             <Badge variant="outline" className="gap-1 px-2 py-1 text-[10px]">
                               <OriginIcon className="h-3 w-3" aria-hidden="true" />

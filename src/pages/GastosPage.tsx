@@ -1,6 +1,6 @@
 // src/pages/GastosPage.tsx
 import React, { useState, useEffect, useRef } from 'react';
-import { Gasto, CategoriaGasto, Jornada } from '@/types';
+import { Gasto, CategoriaGasto } from '@/types';
 import {
   crearGasto,
   getTodosGastos,
@@ -16,18 +16,23 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { createToast } from '@/components/ui/Toast';
 import { formatCOP } from '@/utils/formatCOP';
 import { parseFiniteNumber, validatePositiveAmount } from '@/utils/adminInputValidation';
-import { AlertCircle, DollarSign, Plus, Trash2 } from 'lucide-react';
+import { formatHora } from '@/utils/dateUtils';
+import { toValidAdminDate } from '@/utils/adminAnalytics';
+import { AlertCircle, Clock, DollarSign, Plus, Trash2 } from 'lucide-react';
 import { Timestamp } from 'firebase/firestore';
 import { useNegocio } from '@/context/NegocioContext';
 
 const categorias: CategoriaGasto[] = ['gas', 'insumos', 'mantenimiento', 'otros', 'domiciliario', 'servicios', 'varios', 'salarios'];
-const jornadas: Jornada[] = ['mañana', 'noche', 'ambas'];
 
-const jornadaLabels: Record<Jornada, string> = {
-  mañana: 'Mañana/Tarde',
-  noche: 'Noche',
-  ambas: 'Ambas',
-};
+function formatFechaGasto(fecha: unknown): string {
+  const date = toValidAdminDate(fecha);
+  return date ? date.toLocaleDateString('es-CO') : 'Sin fecha';
+}
+
+function formatHoraGasto(fecha: unknown): string {
+  const date = toValidAdminDate(fecha);
+  return date ? formatHora(date) : '--:--';
+}
 
 export function GastosPage() {
   const { negocioActual, esSuperAdmin, usuarioNegocio } = useNegocio();
@@ -41,7 +46,6 @@ export function GastosPage() {
   const [concepto, setConcepto] = useState('');
   const [montoStr, setMontoStr] = useState('');
   const [categoria, setCategoria] = useState<CategoriaGasto>('gas');
-  const [jornada, setJornada] = useState<Jornada>('ambas');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const requestGenerationRef = useRef(0);
 
@@ -90,7 +94,7 @@ export function GastosPage() {
         concepto: concepto.trim(),
         monto,
         categoria,
-        jornada,
+        // Timestamp.now() conserva la hora exacta del gasto.
         fecha: Timestamp.now(),
       };
 
@@ -101,7 +105,6 @@ export function GastosPage() {
       setConcepto('');
       setMontoStr('');
       setCategoria('gas');
-      setJornada('ambas');
       setCreandoGasto(false);
       await cargarGastos();
     } catch (err) {
@@ -229,22 +232,6 @@ export function GastosPage() {
                         </option>
                       ))}
                     </Select>
-
-                    <Select
-                      label="Jornada"
-                      value={jornada}
-                      onChange={(e) => setJornada(e.target.value as Jornada)}
-                      options={jornadas.map((j) => ({
-                        value: j,
-                        label: jornadaLabels[j],
-                      }))}
-                    >
-                      {jornadas.map((j) => (
-                        <option key={j} value={j}>
-                          {jornadaLabels[j]}
-                        </option>
-                      ))}
-                    </Select>
                   </div>
 
                   <Button type="submit" variant="primary" className="w-full text-xs">
@@ -288,13 +275,10 @@ export function GastosPage() {
                         </div>
 
                         <div className="mt-2 flex items-center justify-between text-[11px] text-neutral-400">
-                          <span>
-                            {gasto.fecha?.toDate
-                              ? gasto.fecha.toDate().toLocaleDateString()
-                              : 'N/A'}
-                          </span>
-                          <span className="capitalize px-1.5 py-0.5 bg-neutral-800/60 rounded text-[10px]">
-                            {gasto.jornada}
+                          <span>{formatFechaGasto(gasto.fecha)}</span>
+                          <span className="flex items-center gap-1 rounded bg-neutral-800/60 px-1.5 py-0.5 text-[10px]">
+                            <Clock className="h-3 w-3" aria-hidden="true" />
+                            {formatHoraGasto(gasto.fecha)}
                           </span>
                         </div>
                       </div>

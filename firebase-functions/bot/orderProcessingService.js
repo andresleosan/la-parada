@@ -555,7 +555,6 @@ async function confirmarOrden(ordenPendienteId, numeroCliente, direccion, barrio
             tipoEntrega: 'domicilio',
             origen: 'whatsapp',
             estado: 'pendiente',
-            jornada: obtenerJornadaActual(),
             codigoPublico: codigo,
             ordenWhatsappId: ordenPendienteId,
             creadoEn: timestamp,
@@ -741,16 +740,6 @@ async function procesarMensajePorBot(numeroCliente, contenidoMensaje, operationC
         accion: 'comando_desconocido',
         respuesta: whatsappBotService_1.TEMPLATES_AUTO_RESPUESTA.ERROR_COMANDO,
     };
-}
-/**
- * Obtiene jornada actual para registrar la venta
- */
-function obtenerJornadaActual() {
-    const ahora = new Date();
-    const hora = ahora.getHours();
-    if (hora < 14)
-        return 'mañana';
-    return 'noche';
 }
 /**
  * Estadísticas de órdenes por WhatsApp

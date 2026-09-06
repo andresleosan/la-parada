@@ -20,14 +20,14 @@ export interface UseDomiciliosResult {
   refresh: () => Promise<void>;
 }
 
-export function useDomicilios(jornada: 'mañana' | 'noche' | 'ambas'): UseDomiciliosResult {
+export function useDomicilios(): UseDomiciliosResult {
   const { negocioActual } = useNegocio();
   const tenantId = negocioActual.id;
   const [activos, setActivos] = useState<Domicilio[]>([]);
   const [entregados, setEntregados] = useState<Domicilio[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const scopeKey = `${tenantId}:${jornada}`;
+  const scopeKey = tenantId;
   const activeScopeRef = useRef(scopeKey);
   const refreshGuardRef = useRef(createScopedRequestGuard());
   activeScopeRef.current = scopeKey;
@@ -63,7 +63,6 @@ export function useDomicilios(jornada: 'mañana' | 'noche' | 'ambas'): UseDomici
 
     // Suscribirse a domicilios activos con listener
     const unsubscribeActivos = onDomiciliosActivosChange(
-      jornada,
       tenantId,
       (datos) => {
         if (!isActiveScope()) return;
@@ -86,7 +85,7 @@ export function useDomicilios(jornada: 'mañana' | 'noche' | 'ambas'): UseDomici
     // Cargar historial de entregados (fetch inicial, sin listener)
     const cargarEntregados = async () => {
       try {
-        const datos = await getDomiciliosEntregados(jornada, tenantId);
+        const datos = await getDomiciliosEntregados(tenantId);
         if (!isActiveScope()) return;
         entregadosSettled = true;
         setEntregados(datos);
@@ -112,7 +111,7 @@ export function useDomicilios(jornada: 'mañana' | 'noche' | 'ambas'): UseDomici
       unsubscribeActivos();
       clearTimeout(timeoutId);
     };
-  }, [jornada, tenantId]);
+  }, [tenantId]);
 
   const updateEstado = async (id: string, nuevoEstado: EstadoDomicilio) => {
     try {
@@ -140,8 +139,8 @@ export function useDomicilios(jornada: 'mañana' | 'noche' | 'ambas'): UseDomici
     setLoading(true);
     try {
       const [activosActuales, entregadosActuales] = await Promise.all([
-        getDomiciliosActivos(jornada, tenantId),
-        getDomiciliosEntregados(jornada, tenantId),
+        getDomiciliosActivos(tenantId),
+        getDomiciliosEntregados(tenantId),
       ]);
       if (!refreshGuardRef.current.isCurrent(request, activeScopeRef.current)) return;
       setActivos(activosActuales);

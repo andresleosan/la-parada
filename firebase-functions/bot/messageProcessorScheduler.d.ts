@@ -4,7 +4,6 @@ interface BotRuntimeConfig {
     activo: boolean;
     mensajeBienvenida: string;
     mensajeCierre: string;
-    jornadaActiva: 'mañana' | 'noche' | 'ambas';
 }
 /**
  * Scheduled Cloud Function que procesa mensajes en queue

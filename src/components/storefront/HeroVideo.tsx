@@ -1,8 +1,6 @@
 // src/components/storefront/HeroVideo.tsx
 import { useEffect, useRef, useState } from 'react';
-import type { Jornada } from '@/types';
 
-type HeroJornada = 'mañana' | 'noche';
 type Orientation = 'landscape' | 'portrait';
 
 interface HeroMedia {
@@ -13,38 +11,23 @@ interface HeroMedia {
 }
 
 /**
- * Loops cortos (8–18 s, sin audio) generados con scripts/build-hero-video.sh a partir de
- * clips de Pexels (licencia libre para uso comercial). Cada jornada tiene una versión
- * horizontal para escritorio y una vertical para móvil para no descargar píxeles de más.
+ * Loop corto (8–18 s, sin audio) generado con scripts/build-hero-video.sh a partir de
+ * clips de Pexels (licencia libre para uso comercial). Un único video para todo el día,
+ * con versión horizontal para escritorio y vertical para móvil para no descargar
+ * píxeles de más.
  */
-const HERO_MEDIA: Record<HeroJornada, Record<Orientation, HeroMedia>> = {
-  noche: {
-    landscape: {
-      video: '/media/hero/noche-landscape.mp4',
-      poster: '/media/hero/noche-landscape.webp',
-      width: 1280,
-      height: 720,
-    },
-    portrait: {
-      video: '/media/hero/noche-portrait.mp4',
-      poster: '/media/hero/noche-portrait.webp',
-      width: 720,
-      height: 1280,
-    },
+const HERO_MEDIA: Record<Orientation, HeroMedia> = {
+  landscape: {
+    video: '/media/hero/hero-landscape.mp4',
+    poster: '/media/hero/hero-landscape.webp',
+    width: 1280,
+    height: 720,
   },
-  mañana: {
-    landscape: {
-      video: '/media/hero/manana-landscape.mp4',
-      poster: '/media/hero/manana-landscape.webp',
-      width: 1280,
-      height: 720,
-    },
-    portrait: {
-      video: '/media/hero/manana-portrait.mp4',
-      poster: '/media/hero/manana-portrait.webp',
-      width: 720,
-      height: 1280,
-    },
+  portrait: {
+    video: '/media/hero/hero-portrait.mp4',
+    poster: '/media/hero/hero-portrait.webp',
+    width: 720,
+    height: 1280,
   },
 };
 
@@ -53,10 +36,6 @@ const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
 
 // React 18 no reconoce `fetchPriority`; el atributo en minúsculas llega al DOM sin advertencias.
 const POSTER_PRIORITY = { fetchpriority: 'high' } as object;
-
-function resolveJornada(jornada: Jornada): HeroJornada {
-  return jornada === 'mañana' ? 'mañana' : 'noche';
-}
 
 function canMatchMedia(): boolean {
   return typeof window !== 'undefined' && typeof window.matchMedia === 'function';
@@ -80,18 +59,17 @@ function shouldPlayVideo(): boolean {
 }
 
 interface HeroVideoProps {
-  jornada: Jornada;
   className?: string;
 }
 
-export function HeroVideo({ jornada, className = '' }: HeroVideoProps) {
+export function HeroVideo({ className = '' }: HeroVideoProps) {
   const [orientation, setOrientation] = useState<Orientation>(getOrientation);
   const [videoEnabled, setVideoEnabled] = useState<boolean>(shouldPlayVideo);
   const [ready, setReady] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const media = HERO_MEDIA[resolveJornada(jornada)][orientation];
+  const media = HERO_MEDIA[orientation];
 
   useEffect(() => {
     if (!canMatchMedia()) return;
@@ -109,7 +87,7 @@ export function HeroVideo({ jornada, className = '' }: HeroVideoProps) {
     };
   }, []);
 
-  // Al cambiar de jornada u orientación el <video> se remonta; el póster cubre mientras carga.
+  // Al cambiar de orientación el <video> se remonta; el póster cubre mientras carga.
   useEffect(() => {
     setReady(false);
   }, [media.video]);

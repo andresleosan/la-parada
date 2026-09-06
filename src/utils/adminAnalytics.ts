@@ -8,12 +8,10 @@ interface AnalyticsItem {
 export interface AnalyticsSale {
   total: number;
   origen: string;
-  jornada: string;
+  /** Fecha y hora exacta de la venta: de aquí sale la hora, no de un campo aparte. */
   fecha?: unknown;
   items?: AnalyticsItem[];
 }
-
-export type AnalyticsShift = 'todas' | 'mañana' | 'noche';
 
 export function toValidAdminDate(value: unknown): Date | null {
   const candidate = value instanceof Date
@@ -24,6 +22,62 @@ export function toValidAdminDate(value: unknown): Date | null {
       : null;
 
   return candidate && Number.isFinite(candidate.getTime()) ? candidate : null;
+}
+
+/**
+ * Franja horaria del día, en horas locales 0–23 y con ambos extremos incluidos.
+ * Si `desde` es mayor que `hasta` la franja cruza la medianoche (ej. 18 → 2).
+ */
+export interface HourRange {
+  desde: number;
+  hasta: number;
+}
+
+export const FULL_DAY_RANGE: HourRange = { desde: 0, hasta: 23 };
+
+export function clampHour(value: number): number {
+  if (!Number.isFinite(value)) return 0;
+  return Math.min(23, Math.max(0, Math.trunc(value)));
+}
+
+export function formatHourLabel(hour: number): string {
+  return `${String(clampHour(hour)).padStart(2, '0')}:00`;
+}
+
+/** Etiqueta legible de la franja, con el minuto final real (23 → 23:59). */
+export function describeHourRange(range: HourRange): string {
+  const desde = clampHour(range.desde);
+  const hasta = clampHour(range.hasta);
+  return `${formatHourLabel(desde)} – ${String(hasta).padStart(2, '0')}:59`;
+}
+
+export function isFullDayRange(range: HourRange): boolean {
+  return clampHour(range.desde) === 0 && clampHour(range.hasta) === 23;
+}
+
+export function isHourInRange(hour: number, range: HourRange): boolean {
+  const desde = clampHour(range.desde);
+  const hasta = clampHour(range.hasta);
+  // Franja que cruza la medianoche: se cumple en cualquiera de los dos tramos.
+  if (desde > hasta) return hour >= desde || hour <= hasta;
+  return hour >= desde && hour <= hasta;
+}
+
+/** Hora local (0–23) en que quedó registrada la venta, o null si no tiene fecha válida. */
+export function getSaleHour(sale: AnalyticsSale): number | null {
+  const date = toValidAdminDate(sale.fecha);
+  return date ? date.getHours() : null;
+}
+
+export function filterSalesByHourRange(
+  sales: AnalyticsSale[],
+  range: HourRange
+): AnalyticsSale[] {
+  if (isFullDayRange(range)) return sales;
+  return sales.filter((sale) => {
+    const hour = getSaleHour(sale);
+    return hour !== null && isHourInRange(hour, range);
+  });
 }
 
 export function countSalesOnDate(sales: AnalyticsSale[], targetDate: Date): number {
@@ -41,16 +95,14 @@ export function countSalesOnDate(sales: AnalyticsSale[], targetDate: Date): numb
 
 export function buildHourlySales(
   sales: AnalyticsSale[],
-  shift: AnalyticsShift
+  range: HourRange = FULL_DAY_RANGE
 ): Array<{ hora: string; ordenes: number; ingresos: number }> {
   const hourly = new Map<number, { ordenes: number; ingresos: number }>();
 
   sales.forEach((sale) => {
-    if (shift !== 'todas' && sale.jornada !== shift) return;
-    const date = toValidAdminDate(sale.fecha);
-    if (!date) return;
+    const hour = getSaleHour(sale);
+    if (hour === null || !isHourInRange(hour, range)) return;
 
-    const hour = date.getHours();
     const current = hourly.get(hour) || { ordenes: 0, ingresos: 0 };
     current.ordenes += 1;
     current.ingresos += Number.isFinite(sale.total) ? sale.total : 0;
@@ -60,7 +112,7 @@ export function buildHourlySales(
   return Array.from(hourly.entries())
     .sort(([left], [right]) => left - right)
     .map(([hour, values]) => ({
-      hora: `${String(hour).padStart(2, '0')}:00`,
+      hora: formatHourLabel(hour),
       ...values,
     }));
 }

@@ -20,9 +20,9 @@ despliegue están descritos en `PHASE_7_ENV_SETUP.md`.
 5. El backend recalcula el catálogo y crea un `domicilios` con origen `whatsapp`, medio offline y
    código `LP-WA-*`. No crea una venta anticipada ni confirma un pago recibido.
 
-El bot solo procesa la cola cuando `configuracion/{negocioId}.activo` es `true`. Respeta la jornada
-configurada, usa mensajes personalizados solo si cumplen límites y no contienen enlaces de cobro,
-y deja el resto para respuesta manual. El panel también envía por backend; escribir un documento en
+El bot solo procesa la cola cuando `configuracion/{negocioId}.activo` es `true`. Usa mensajes
+personalizados solo si cumplen límites y no contienen enlaces de cobro, y deja el resto para
+respuesta manual. El panel también envía por backend; escribir un documento en
 Firestore ya no simula un envío.
 
 ## Reintentos y auditoría

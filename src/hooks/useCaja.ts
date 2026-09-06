@@ -1,8 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
-import { Caja, Jornada, Venta } from '../types';
+import { Caja, Venta } from '../types';
 import { getCajaHoy, crearCaja, reiniciarCaja } from '../services/cajaService';
 import { getTodosGastos } from '../services/gastosService';
-import { useJornada } from '../context/JornadaContext';
 import { useNegocio } from '../context/NegocioContext';
 import { collection, getDocs, query, where, Timestamp } from 'firebase/firestore';
 import { db } from '../services/firebase';
@@ -19,10 +18,9 @@ export interface UseCajaResult {
 }
 
 /**
- * Hook para manejar la caja de la jornada
+ * Hook para manejar la caja del día
  */
 export function useCaja(): UseCajaResult {
-  const { jornadaActual } = useJornada();
   const { negocioActual } = useNegocio();
   const tenantId = negocioActual.id;
   const [cajaActual, setCajaActual] = useState<Caja | null>(null);
@@ -34,7 +32,7 @@ export function useCaja(): UseCajaResult {
   /**
    * Obtener ventas en efectivo del día
    */
-  const obtenerVentasEfectivo = async (jornada: Jornada): Promise<number> => {
+  const obtenerVentasEfectivo = async (): Promise<number> => {
     try {
       const hoy = new Date();
       const fechaInicio = new Date(hoy);
@@ -54,11 +52,6 @@ export function useCaja(): UseCajaResult {
       const snapshot = await getDocs(q);
       const total = snapshot.docs.reduce((sum, doc) => {
         const venta = doc.data() as Venta;
-        if (
-          jornada !== 'ambas'
-          && venta.jornada !== jornada
-          && venta.jornada !== 'ambas'
-        ) return sum;
         return sum + (venta.total || 0);
       }, 0);
 
@@ -72,13 +65,13 @@ export function useCaja(): UseCajaResult {
   /**
    * Cargar caja actual con ventas integradas y gastos del día
    */
-  const cargarCaja = async (jornada: Jornada) => {
+  const cargarCaja = async () => {
     const generation = ++requestGenerationRef.current;
     setLoading(true);
     try {
       const [caja, ventas, todosGastos] = await Promise.all([
-        getCajaHoy(tenantId, jornada),
-        obtenerVentasEfectivo(jornada),
+        getCajaHoy(tenantId),
+        obtenerVentasEfectivo(),
         getTodosGastos(tenantId),
       ]);
       if (generation !== requestGenerationRef.current) return;
@@ -91,10 +84,7 @@ export function useCaja(): UseCajaResult {
           if (!fechaGasto) return false;
           const fechaNormalizada = new Date(fechaGasto);
           fechaNormalizada.setHours(0, 0, 0, 0);
-          const coincideJornada = jornada === 'ambas'
-            || gasto.jornada === jornada
-            || gasto.jornada === 'ambas';
-          return coincideJornada && fechaNormalizada.getTime() === hoy.getTime();
+          return fechaNormalizada.getTime() === hoy.getTime();
         })
         .reduce((sum, gasto) => sum + (gasto.monto || 0), 0);
 
@@ -131,8 +121,8 @@ export function useCaja(): UseCajaResult {
    */
   const crearCajaHoy = async (montoInicial: number) => {
     try {
-      await crearCaja(tenantId, jornadaActual, montoInicial);
-      await cargarCaja(jornadaActual);
+      await crearCaja(tenantId, montoInicial);
+      await cargarCaja();
       setError(null);
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : 'Error desconocido';
@@ -146,7 +136,7 @@ export function useCaja(): UseCajaResult {
    * Refrescar caja
    */
   const refresh = async () => {
-    await cargarCaja(jornadaActual);
+    await cargarCaja();
   };
 
   /**
@@ -158,7 +148,7 @@ export function useCaja(): UseCajaResult {
         throw new Error('No hay caja activa para reiniciar');
       }
       await reiniciarCaja(cajaActual.id, tenantId);
-      await cargarCaja(jornadaActual);
+      await cargarCaja();
       setError(null);
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : 'Error desconocido';
@@ -172,11 +162,11 @@ export function useCaja(): UseCajaResult {
    * Cargar caja al montar el componente
    */
   useEffect(() => {
-    cargarCaja(jornadaActual);
+    cargarCaja();
     return () => {
       requestGenerationRef.current += 1;
     };
-  }, [jornadaActual, tenantId]);
+  }, [tenantId]);
 
   return {
     cajaActual,

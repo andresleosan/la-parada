@@ -1,11 +1,9 @@
 // src/pages/POSPage.tsx
 import { useRef, useState } from 'react';
-import { Moon, ShoppingCart, Sunrise } from 'lucide-react';
+import { Clock, ShoppingCart } from 'lucide-react';
 import type { ItemVenta, MetodoPago, TipoEntrega } from '@/types';
-import { useJornada } from '@/context/JornadaContext';
 import { useNegocio } from '@/context/NegocioContext';
 import { useProductos } from '@/hooks/useProductos';
-import { Button } from '@/components/ui/Button';
 import { Catalogo } from '@/components/pos/Catalogo';
 import { Carrito } from '@/components/pos/Carrito';
 import { createToast } from '@/components/ui/Toast';
@@ -17,23 +15,16 @@ import {
   limpiarCarrito,
 } from '@/utils/carritoUtils';
 import { formatCOP } from '@/utils/formatCOP';
-import { resolvePosCheckoutJornada } from '@/utils/posCheckout';
+import { formatHora } from '@/utils/dateUtils';
+import { useHoraActual } from '@/hooks/useHoraActual';
 
 export function POSPage() {
-  const { jornadaActual, setJornada } = useJornada();
   const { negocioActual } = useNegocio();
-  const { productos, combos, loading } = useProductos(jornadaActual);
+  const { productos, combos, loading } = useProductos();
   const [items, setItems] = useState<ItemVenta[]>([]);
   const [registrando, setRegistrando] = useState(false);
   const checkoutLockRef = useRef(false);
-  const [jornadaSeleccionada, setJornadaSeleccionada] = useState<'mañana' | 'noche' | null>(() => {
-    if (jornadaActual === 'ambas') return null;
-    const hora = new Date().getHours();
-    if ((hora >= 5 && hora < 11) || (hora >= 18 && hora < 24)) {
-      return jornadaActual as 'mañana' | 'noche';
-    }
-    return null;
-  });
+  const ahora = useHoraActual();
 
   const handleAgregarProducto = (producto: typeof productos[0]) => {
     if (!producto.disponible || registrando) return;
@@ -79,12 +70,6 @@ export function POSPage() {
       createToast('El carrito está vacío', 'error');
       return;
     }
-    const jornadaAUsar = resolvePosCheckoutJornada(jornadaSeleccionada, jornadaActual);
-    if (!jornadaAUsar) {
-      createToast('Elige la jornada antes de cobrar', 'error');
-      return;
-    }
-
     checkoutLockRef.current = true;
     setRegistrando(true);
 
@@ -101,8 +86,7 @@ export function POSPage() {
           clienteApellido || '',
           clienteTelefono || '',
           direccion || '',
-          barrio || '',
-          jornadaAUsar
+          barrio || ''
         );
         createToast('¡Domicilio registrado exitosamente!', 'success');
       } else {
@@ -116,13 +100,12 @@ export function POSPage() {
           items,
           total,
           metodoPago,
-          jornadaAUsar,
           undefined,
           undefined,
           fotoPath,
           tipoEntrega
         );
-        createToast('¡Venta registrada exitosamente!', 'success');
+        createToast(`¡Venta registrada a las ${formatHora(new Date())}!`, 'success');
       }
       
       setItems(limpiarCarrito());
@@ -136,14 +119,8 @@ export function POSPage() {
     }
   };
 
-  const seleccionarJornada = (jornada: 'mañana' | 'noche') => {
-    setJornada(jornada);
-    setJornadaSeleccionada(jornada);
-  };
-
   const totalTicket = calcularSubtotal(items);
   const cantidadTicket = items.reduce((sum, item) => sum + item.cantidad, 0);
-  const checkoutJornada = resolvePosCheckoutJornada(jornadaSeleccionada, jornadaActual);
 
   return (
     <div className="px-3 pb-24 pt-4 sm:px-6 lg:px-8 lg:pb-8">
@@ -155,44 +132,16 @@ export function POSPage() {
             <p className="mt-1 text-sm text-neutral-400">Selecciona productos, revisa el ticket y cobra.</p>
           </div>
 
-          <div className="inline-flex w-fit rounded-xl border border-neutral-800 bg-neutral-900 p-1" aria-label="Jornada del catálogo">
-            <button
-              type="button"
-              onClick={() => seleccionarJornada('mañana')}
-              aria-pressed={jornadaActual === 'mañana'}
-              className={`flex min-h-10 items-center gap-2 rounded-lg px-3 text-xs font-bold ${jornadaActual === 'mañana' ? 'bg-gold-400 text-base-dark' : 'text-neutral-400 hover:bg-neutral-800 hover:text-white'}`}
-            >
-              <Sunrise className="h-4 w-4" aria-hidden="true" />
-              Mañana/Tarde
-            </button>
-            <button
-              type="button"
-              onClick={() => seleccionarJornada('noche')}
-              aria-pressed={jornadaActual === 'noche'}
-              className={`flex min-h-10 items-center gap-2 rounded-lg px-3 text-xs font-bold ${jornadaActual === 'noche' ? 'bg-gold-400 text-base-dark' : 'text-neutral-400 hover:bg-neutral-800 hover:text-white'}`}
-            >
-              <Moon className="h-4 w-4" aria-hidden="true" />
-              Noche
-            </button>
+          <div className="inline-flex w-fit items-center gap-2 rounded-xl border border-neutral-800 bg-neutral-900 px-3 py-2 text-xs font-bold text-neutral-300">
+            <Clock className="h-4 w-4 text-gold-400" aria-hidden="true" />
+            <span>
+              Se registrará a las{' '}
+              <time dateTime={ahora.toISOString()} className="text-white">
+                {formatHora(ahora)}
+              </time>
+            </span>
           </div>
         </div>
-
-        {!checkoutJornada && (
-          <div role="status" className="mb-4 flex flex-col gap-3 rounded-2xl border border-amber-500/[0.35] bg-amber-500/10 p-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="text-sm font-bold text-white">Elige una jornada antes de cobrar</p>
-              <p className="text-xs text-neutral-400">La venta quedará registrada en el turno seleccionado.</p>
-            </div>
-            <div className="flex gap-2">
-              <Button onClick={() => seleccionarJornada('mañana')} size="sm">
-                <Sunrise className="h-4 w-4" aria-hidden="true" /> Mañana
-              </Button>
-              <Button onClick={() => seleccionarJornada('noche')} size="sm">
-                <Moon className="h-4 w-4" aria-hidden="true" /> Noche
-              </Button>
-            </div>
-          </div>
-        )}
       </div>
 
       <div className="mx-auto max-w-[1500px]">
@@ -218,11 +167,6 @@ export function POSPage() {
               onActualizarItems={setItems}
               onRegistrarVenta={handleRegistrarVenta}
               loading={registrando}
-              checkoutDisabledReason={
-                checkoutJornada
-                  ? undefined
-                  : 'Selecciona una jornada para habilitar el cobro.'
-              }
             />
           </aside>
         </div>

@@ -10,7 +10,7 @@ import {
   Timestamp,
 } from 'firebase/firestore';
 import { db } from './firebase';
-import { Caja, Jornada } from '../types';
+import { Caja } from '../types';
 import { requireTenantId } from '@/security/tenantScope';
 
 async function getCajaDelTenant(cajaId: string, negocioId: string): Promise<Caja | null> {
@@ -21,11 +21,10 @@ async function getCajaDelTenant(cajaId: string, negocioId: string): Promise<Caja
 }
 
 /**
- * Crear caja para una jornada
+ * Crear la caja del día
  */
 export async function crearCaja(
   negocioId: string,
-  jornada: Jornada,
   montoInicial: number
 ): Promise<string> {
   try {
@@ -33,7 +32,6 @@ export async function crearCaja(
     const cajaRef = collection(db, 'cajas');
     const docRef = await addDoc(cajaRef, {
       negocioId: tenantId,
-      jornada,
       montoInicial,
       ingresos: 0,
       egresos: 0,
@@ -49,9 +47,9 @@ export async function crearCaja(
 }
 
 /**
- * Obtener caja actual de hoy por jornada
+ * Obtener la caja de hoy
  */
-export async function getCajaHoy(negocioId: string, jornada: Jornada): Promise<Caja | null> {
+export async function getCajaHoy(negocioId: string): Promise<Caja | null> {
   try {
     const hoy = new Date();
     const fechaInicio = new Date(hoy);
@@ -63,7 +61,6 @@ export async function getCajaHoy(negocioId: string, jornada: Jornada): Promise<C
     const q = query(
       cajaRef,
       where('negocioId', '==', requireTenantId(negocioId)),
-      where('jornada', '==', jornada),
       where('fecha', '>=', Timestamp.fromDate(fechaInicio)),
       where('fecha', '<=', Timestamp.fromDate(fechaFin))
     );
@@ -86,11 +83,10 @@ export async function getCajaHoy(negocioId: string, jornada: Jornada): Promise<C
 }
 
 /**
- * Obtener caja por jornada y fecha específica
+ * Obtener la caja de una fecha específica
  */
-export async function getCajaPorJornadaYFecha(
+export async function getCajaPorFecha(
   negocioId: string,
-  jornada: Jornada,
   fecha: Date
 ): Promise<Caja | null> {
   try {
@@ -103,7 +99,6 @@ export async function getCajaPorJornadaYFecha(
     const q = query(
       cajaRef,
       where('negocioId', '==', requireTenantId(negocioId)),
-      where('jornada', '==', jornada),
       where('fecha', '>=', Timestamp.fromDate(fechaInicio)),
       where('fecha', '<=', Timestamp.fromDate(fechaFin))
     );
@@ -120,7 +115,7 @@ export async function getCajaPorJornadaYFecha(
 
     return null;
   } catch (error) {
-    console.error('Error getting caja por jornada y fecha:', error);
+    console.error('Error getting caja por fecha:', error);
     return null;
   }
 }

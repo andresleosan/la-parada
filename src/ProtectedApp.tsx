@@ -2,7 +2,6 @@ import { Suspense, lazy } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { NegocioProvider, useNegocio } from '@/context/NegocioContext';
-import { JornadaProvider } from '@/context/JornadaContext';
 import { AdminShell } from '@/components/layout/AdminShell';
 import { LoginPage } from '@/pages/LoginPage';
 import { RegistroNegocioPage } from '@/pages/RegistroNegocioPage';
@@ -117,9 +116,7 @@ export default function ProtectedApp() {
   return (
     <AuthProvider>
       <NegocioProvider>
-        <JornadaProvider>
-          <ProtectedRouter />
-        </JornadaProvider>
+        <ProtectedRouter />
       </NegocioProvider>
     </AuthProvider>
   );

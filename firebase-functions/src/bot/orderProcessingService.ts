@@ -680,7 +680,6 @@ export async function confirmarOrden(
       tipoEntrega: 'domicilio',
       origen: 'whatsapp',
       estado: 'pendiente',
-      jornada: obtenerJornadaActual(),
       codigoPublico: codigo,
       ordenWhatsappId: ordenPendienteId,
       creadoEn: timestamp,
@@ -932,17 +931,6 @@ export async function procesarMensajePorBot(
     accion: 'comando_desconocido',
     respuesta: TEMPLATES_AUTO_RESPUESTA.ERROR_COMANDO,
   };
-}
-
-/**
- * Obtiene jornada actual para registrar la venta
- */
-function obtenerJornadaActual(): 'mañana' | 'noche' {
-  const ahora = new Date();
-  const hora = ahora.getHours();
-
-  if (hora < 14) return 'mañana';
-  return 'noche';
 }
 
 /**

@@ -24,7 +24,6 @@ interface CarritoProps {
   onActualizarItems: Dispatch<SetStateAction<ItemVenta[]>>;
   onRegistrarVenta: (metodoPago: MetodoPago, tipoEntrega: TipoEntrega, montoRecibido?: number, clienteNombre?: string, clienteApellido?: string, clienteTelefono?: string, direccion?: string, barrio?: string, fotoTransferencia?: File | null) => Promise<void>;
   loading?: boolean;
-  checkoutDisabledReason?: string;
 }
 
 interface ComprobanteTransferenciaFieldProps {
@@ -88,7 +87,6 @@ export function Carrito({
   onActualizarItems,
   onRegistrarVenta,
   loading = false,
-  checkoutDisabledReason,
 }: CarritoProps) {
   const [metodoPago, setMetodoPago] = useState<MetodoPago>('efectivo');
   const [tipoEntrega, setTipoEntrega] = useState<TipoEntrega>('mostrador');
@@ -108,11 +106,6 @@ export function Carrito({
     metodoPago === 'efectivo' && !esMontoSuficiente(subtotal, Number(montoRecibido) || 0, metodoPago);
 
   const handleRegistrarVenta = async () => {
-    if (checkoutDisabledReason) {
-      setError(checkoutDisabledReason);
-      return;
-    }
-
     if (items.length === 0) {
       setError('El carrito está vacío');
       return;
@@ -382,12 +375,6 @@ export function Carrito({
       )}
 
       {/* Botón registrar */}
-      {checkoutDisabledReason && (
-        <p role="status" className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-2 text-xs font-medium text-amber-700">
-          {checkoutDisabledReason}
-        </p>
-      )}
-
       {metodoPago === 'transferencia' && tipoEntrega === 'domicilio' && (
         <p className="rounded-lg border border-neutral-300 bg-neutral-100 p-3 text-xs text-neutral-600">
           El domicilio guardará el método de pago. En este paso no se adjunta comprobante.
@@ -397,7 +384,7 @@ export function Carrito({
         onClick={handleRegistrarVenta}
         fullWidth
         loading={loading}
-        disabled={loading || items.length === 0 || Boolean(checkoutDisabledReason)}
+        disabled={loading || items.length === 0}
         size="lg"
       >
         {loading ? 'Registrando...' : 'Registrar Venta'}

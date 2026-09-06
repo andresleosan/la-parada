@@ -12,7 +12,7 @@ import {
   Timestamp,
 } from 'firebase/firestore';
 import { db } from './firebase';
-import { CierreCaja, Jornada } from '../types';
+import { CierreCaja } from '../types';
 import { requireTenantId } from '@/security/tenantScope';
 
 
@@ -25,11 +25,10 @@ interface ResumenCierre {
 }
 
 /**
- * Crear cierre de caja para una jornada
+ * Crear el cierre de caja del día
  */
 export async function crearCierreCaja(
   negocioId: string,
-  jornada: Jornada,
   totalVentas: number,
   totalGastos: number,
   notas?: string
@@ -41,7 +40,6 @@ export async function crearCierreCaja(
     const cierreCajaRef = collection(db, 'cierres_caja');
     const docRef = await addDoc(cierreCajaRef, {
       negocioId: tenantId,
-      jornada,
       totalIngresos: totalVentas,
       totalGastos,
       utilidadNeta,
@@ -81,11 +79,10 @@ export async function actualizarCierreCaja(
 }
 
 /**
- * Obtener cierre de caja por jornada y fecha
+ * Obtener el cierre de caja de una fecha
  */
-export async function getCierreCajaPorJornadaYFecha(
+export async function getCierreCajaPorFecha(
   negocioId: string,
-  jornada: Jornada,
   fecha: Date
 ): Promise<CierreCaja | null> {
   try {
@@ -98,7 +95,6 @@ export async function getCierreCajaPorJornadaYFecha(
     const q = query(
       cierreCajaRef,
       where('negocioId', '==', requireTenantId(negocioId)),
-      where('jornada', '==', jornada),
       where('fecha', '>=', Timestamp.fromDate(fechaInicio)),
       where('fecha', '<=', Timestamp.fromDate(fechaFin))
     );

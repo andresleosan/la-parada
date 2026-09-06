@@ -37,13 +37,13 @@ describe('lecturas de domicilios', () => {
     const failure = new Error('Firestore no disponible');
     firestoreMocks.getDocs.mockRejectedValueOnce(failure);
 
-    await expect(getDomiciliosActivos('ambas', 'negocio-a')).rejects.toBe(failure);
+    await expect(getDomiciliosActivos('negocio-a')).rejects.toBe(failure);
   });
 
   it('propaga el error al fallar la lectura de pedidos creados hoy ya entregados', async () => {
     const failure = new Error('Firestore no disponible');
     firestoreMocks.getDocs.mockRejectedValueOnce(failure);
 
-    await expect(getDomiciliosEntregados('ambas', 'negocio-a')).rejects.toBe(failure);
+    await expect(getDomiciliosEntregados('negocio-a')).rejects.toBe(failure);
   });
 });

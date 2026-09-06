@@ -6,7 +6,6 @@ export declare const MAX_ORDER_TOTAL_COP = 20000000;
 export declare const RATE_LIMIT_MAX_ORDERS = 10;
 export declare const RATE_LIMIT_WINDOW_MS: number;
 export type MetodoPagoOffline = 'efectivo' | 'transferencia';
-export type JornadaPedido = 'mañana' | 'noche';
 export type TipoItemPedido = 'producto' | 'combo';
 export interface PublicOrderItemInput {
     tipo: TipoItemPedido;
@@ -23,14 +22,12 @@ export interface PublicOrderInput {
     barrio: string;
     notas?: string;
     metodoPago: MetodoPagoOffline;
-    jornada: JornadaPedido;
     pagaCon?: number;
 }
 export interface CatalogItemData {
     nombre?: unknown;
     negocioId?: unknown;
     disponible?: unknown;
-    jornada?: unknown;
     precio?: unknown;
     precioEspecial?: unknown;
 }

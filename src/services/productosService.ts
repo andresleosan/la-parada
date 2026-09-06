@@ -15,8 +15,19 @@ import {
   QueryConstraint,
 } from 'firebase/firestore';
 import { db } from '@/services/firebase';
-import type { Producto, Combo, Jornada } from '@/types';
+import type { Producto, Combo } from '@/types';
 import { requireTenantId } from '@/security/tenantScope';
+
+/**
+ * Query base del catálogo: un solo menú por negocio, ordenado por nombre.
+ */
+function buildCatalogQuery(collectionName: 'productos' | 'combos', negocioId: string) {
+  const constraints: QueryConstraint[] = [
+    where('negocioId', '==', requireTenantId(negocioId)),
+    orderBy('nombre', 'asc'),
+  ];
+  return query(collection(db, collectionName), ...constraints);
+}
 
 async function assertDocumentTenant(
   collectionName: 'productos' | 'combos',
@@ -32,20 +43,10 @@ async function assertDocumentTenant(
 }
 
 /**
- * Obtiene productos disponibles para una jornada específica
+ * Obtiene el catálogo completo de productos del negocio
  */
-export async function getProductos(jornada: Jornada, negocioId: string): Promise<Producto[]> {
-  const tenantId = requireTenantId(negocioId);
-  const constraints: QueryConstraint[] = [where('negocioId', '==', tenantId)];
-
-  if (jornada !== 'ambas') {
-    constraints.push(
-      where('jornada', 'in', [jornada, 'ambas'])
-    );
-  }
-
-  const q = query(collection(db, 'productos'), ...constraints);
-  const snapshot = await getDocs(q);
+export async function getProductos(negocioId: string): Promise<Producto[]> {
+  const snapshot = await getDocs(buildCatalogQuery('productos', negocioId));
 
   return snapshot.docs.map((doc) => ({
     ...doc.data(),
@@ -67,20 +68,10 @@ export async function getProductoById(id: string, negocioId: string): Promise<Pr
 }
 
 /**
- * Obtiene combos disponibles para una jornada específica
+ * Obtiene el catálogo completo de combos del negocio
  */
-export async function getCombos(jornada: Jornada, negocioId: string): Promise<Combo[]> {
-  const tenantId = requireTenantId(negocioId);
-  const constraints: QueryConstraint[] = [where('negocioId', '==', tenantId)];
-
-  if (jornada !== 'ambas') {
-    constraints.push(
-      where('jornada', 'in', [jornada, 'ambas'])
-    );
-  }
-
-  const q = query(collection(db, 'combos'), ...constraints);
-  const snapshot = await getDocs(q);
+export async function getCombos(negocioId: string): Promise<Combo[]> {
+  const snapshot = await getDocs(buildCatalogQuery('combos', negocioId));
 
   return snapshot.docs.map((doc) => ({
     ...doc.data(),
@@ -105,22 +96,10 @@ export async function getComboById(id: string, negocioId: string): Promise<Combo
  * Listener en tiempo real para cambios de disponibilidad en productos
  */
 export function onProductosChange(
-  jornada: Jornada,
   negocioId: string,
   callback: (productos: Producto[]) => void
 ): () => void {
-  const tenantId = requireTenantId(negocioId);
-  const constraints: QueryConstraint[] = [where('negocioId', '==', tenantId)];
-
-  if (jornada !== 'ambas') {
-    constraints.push(
-      where('jornada', 'in', [jornada, 'ambas'])
-    );
-  }
-
-  const q = query(collection(db, 'productos'), ...constraints);
-
-  return onSnapshot(q, (snapshot) => {
+  return onSnapshot(buildCatalogQuery('productos', negocioId), (snapshot) => {
     const productos = snapshot.docs.map((doc) => ({
       ...doc.data(),
       id: doc.id,
@@ -133,22 +112,10 @@ export function onProductosChange(
  * Listener en tiempo real para cambios de disponibilidad en combos
  */
 export function onCombosChange(
-  jornada: Jornada,
   negocioId: string,
   callback: (combos: Combo[]) => void
 ): () => void {
-  const tenantId = requireTenantId(negocioId);
-  const constraints: QueryConstraint[] = [where('negocioId', '==', tenantId)];
-
-  if (jornada !== 'ambas') {
-    constraints.push(
-      where('jornada', 'in', [jornada, 'ambas'])
-    );
-  }
-
-  const q = query(collection(db, 'combos'), ...constraints);
-
-  return onSnapshot(q, (snapshot) => {
+  return onSnapshot(buildCatalogQuery('combos', negocioId), (snapshot) => {
     const combos = snapshot.docs.map((doc) => ({
       ...doc.data(),
       id: doc.id,
@@ -258,51 +225,6 @@ export async function toggleProductoDestacado(
 }
 
 /**
- * Obtener todos los productos (sin filtro jornada)
- */
-export async function getTodosProductos(negocioId: string): Promise<Producto[]> {
-  try {
-    const productosRef = collection(db, 'productos');
-    const q = query(
-      productosRef,
-      where('negocioId', '==', requireTenantId(negocioId)),
-      orderBy('nombre', 'asc')
-    );
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map((doc) => ({
-      ...doc.data(),
-      id: doc.id,
-    } as Producto));
-  } catch (error) {
-    console.error('Error fetching todos productos:', error);
-    return [];
-  }
-}
-
-/**
- * Listener en tiempo real para TODOS los productos (sin filtro)
- */
-export function onTodosProductosChange(
-  negocioId: string,
-  callback: (productos: Producto[]) => void
-): () => void {
-  const productosRef = collection(db, 'productos');
-  const q = query(
-    productosRef,
-    where('negocioId', '==', requireTenantId(negocioId)),
-    orderBy('nombre', 'asc')
-  );
-
-  return onSnapshot(q, (snapshot) => {
-    const productos = snapshot.docs.map((doc) => ({
-      ...doc.data(),
-      id: doc.id,
-    } as Producto));
-    callback(productos);
-  });
-}
-
-/**
  * Crear nuevo combo
  */
 export async function crearCombo(
@@ -396,49 +318,4 @@ export async function toggleComboDestacado(
     console.error('Error toggling combo destacado:', error);
     throw error;
   }
-}
-
-/**
- * Obtener todos los combos (sin filtro jornada)
- */
-export async function getTodosCombos(negocioId: string): Promise<Combo[]> {
-  try {
-    const combosRef = collection(db, 'combos');
-    const q = query(
-      combosRef,
-      where('negocioId', '==', requireTenantId(negocioId)),
-      orderBy('nombre', 'asc')
-    );
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map((doc) => ({
-      ...doc.data(),
-      id: doc.id,
-    } as Combo));
-  } catch (error) {
-    console.error('Error fetching todos combos:', error);
-    return [];
-  }
-}
-
-/**
- * Listener en tiempo real para TODOS los combos (sin filtro)
- */
-export function onTodosCombosChange(
-  negocioId: string,
-  callback: (combos: Combo[]) => void
-): () => void {
-  const combosRef = collection(db, 'combos');
-  const q = query(
-    combosRef,
-    where('negocioId', '==', requireTenantId(negocioId)),
-    orderBy('nombre', 'asc')
-  );
-
-  return onSnapshot(q, (snapshot) => {
-    const combos = snapshot.docs.map((doc) => ({
-      ...doc.data(),
-      id: doc.id,
-    } as Combo));
-    callback(combos);
-  });
 }

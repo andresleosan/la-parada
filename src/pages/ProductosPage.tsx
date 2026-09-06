@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import type { Producto, Combo, Jornada } from '@/types';
+import type { Producto, Combo } from '@/types';
 import { useProductos } from '@/hooks/useProductos';
 import {
   crearProducto,
@@ -25,17 +25,14 @@ import { createToast } from '@/components/ui/Toast';
 import { formatCOP } from '@/utils/formatCOP';
 import {
   AlertCircle,
-  CalendarDays,
   Edit,
   Eye,
   EyeOff,
   Flame,
   Heart,
   Layers3,
-  Moon,
   Package,
   Plus,
-  Sunrise,
   Tag,
   Trash2,
 } from 'lucide-react';
@@ -48,7 +45,6 @@ export function ProductosPage() {
   const { negocioActual } = useNegocio();
   const { categorias: categoriasDB } = useCategorias();
   const [tab, setTab] = useState<TabType>('productos');
-  const [jornada, setJornada] = useState<Jornada>('ambas');
   const [categoriaFiltro, setCategoriaFiltro] = useState<string>('todas');
   const [productoFormOpen, setProductoFormOpen] = useState(false);
   const [comboFormOpen, setComboFormOpen] = useState(false);
@@ -57,20 +53,7 @@ export function ProductosPage() {
   const [editingCombo, setEditingCombo] = useState<Combo | null>(null);
   const [loadingId, setLoadingId] = useState<string | null>(null);
   
-  const { productos: productosData, combos: combosData, loading, error, refresh } = useProductos(jornada);
-
-  // Filtrar por jornada si no es 'ambas'
-  const productos = useMemo(() => {
-    return jornada === 'ambas'
-      ? productosData
-      : productosData.filter((p) => p.jornada === jornada || p.jornada === 'ambas');
-  }, [productosData, jornada]);
-
-  const combosFiltered = useMemo(() => {
-    return jornada === 'ambas'
-      ? combosData
-      : combosData.filter((c) => c.jornada === jornada || c.jornada === 'ambas');
-  }, [combosData, jornada]);
+  const { productos, combos: combosFiltered, loading, error, refresh } = useProductos();
 
   // Extraer categorías únicas disponibles (fusionando categoriasDB con las existentes en productos)
   const categoriasDisponibles = useMemo(() => {
@@ -350,29 +333,6 @@ export function ProductosPage() {
               <Layers3 className="h-3.5 w-3.5" aria-hidden="true" /> Combos ({combosFiltered.length})
             </button>
           </div>
-
-          {/* Filtro Jornada */}
-          <div className="grid w-full grid-cols-3 gap-2 sm:flex sm:w-auto" role="group" aria-label="Filtrar por jornada">
-            {(['ambas', 'mañana', 'noche'] as const).map((j) => {
-              const JornadaIcon = j === 'ambas' ? CalendarDays : j === 'mañana' ? Sunrise : Moon;
-              const label = j === 'ambas' ? 'Ambas' : j === 'mañana' ? 'Mañana/Tarde' : 'Noche';
-
-              return (
-                <Button
-                  key={j}
-                  onClick={() => setJornada(j)}
-                  aria-pressed={jornada === j}
-                  variant={jornada === j ? 'primary' : 'secondary'}
-                  size="sm"
-                  className="min-w-0 px-2 text-xs sm:px-3"
-                >
-                  <JornadaIcon className="h-3.5 w-3.5" aria-hidden="true" />
-                  <span className="sm:hidden">{j === 'mañana' ? 'Día' : label}</span>
-                  <span className="hidden sm:inline">{label}</span>
-                </Button>
-              );
-            })}
-          </div>
         </div>
 
         {/* Barra de Filtro por Categorías */}
@@ -440,7 +400,7 @@ export function ProductosPage() {
           <div className="grid grid-cols-1 min-[360px]:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
             {productosMostrados.length === 0 ? (
               <div className="col-span-full">
-                <EmptyState icon={Package} title="Sin productos" description="No hay productos para este filtro de categoría o jornada" />
+                <EmptyState icon={Package} title="Sin productos" description="No hay productos para este filtro de categoría" />
               </div>
             ) : (
               productosMostrados.map((producto) => {
@@ -565,7 +525,7 @@ export function ProductosPage() {
           <div className="grid grid-cols-1 min-[360px]:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
             {combosFiltered.length === 0 ? (
               <div className="col-span-full">
-                <EmptyState icon={Package} title="Sin combos" description="Crea tu primer combo para esta jornada" />
+                <EmptyState icon={Package} title="Sin combos" description="Crea tu primer combo" />
               </div>
             ) : (
               combosFiltered.map((combo) => {

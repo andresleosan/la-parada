@@ -34,7 +34,6 @@ interface BotRuntimeConfig {
   activo: boolean;
   mensajeBienvenida: string;
   mensajeCierre: string;
-  jornadaActiva: 'mañana' | 'noche' | 'ambas';
 }
 
 function configuredMessage(value: unknown, fallback: string, maxLength: number): string {
@@ -52,7 +51,6 @@ function configuredMessage(value: unknown, fallback: string, maxLength: number):
 async function getBotRuntimeConfig(negocioId: string): Promise<BotRuntimeConfig> {
   const snapshot = await getDb().collection('configuracion').doc(negocioId).get();
   const data = snapshot.data();
-  const jornadaActiva = data?.jornadaActiva;
   return {
     activo: data?.negocioId === negocioId && data?.activo === true,
     mensajeBienvenida: configuredMessage(
@@ -65,9 +63,6 @@ async function getBotRuntimeConfig(negocioId: string): Promise<BotRuntimeConfig>
       'Gracias por tu pedido. ¡Hasta pronto!',
       1000
     ),
-    jornadaActiva: jornadaActiva === 'mañana' || jornadaActiva === 'noche' || jornadaActiva === 'ambas'
-      ? jornadaActiva
-      : 'ambas',
   };
 }
 
@@ -142,14 +137,6 @@ export async function procesarUnMensaje(
   }
 
   const config = runtimeConfig || await getBotRuntimeConfig(negocioId);
-  const currentJourney: 'mañana' | 'noche' = new Date().getHours() < 14 ? 'mañana' : 'noche';
-  if (config.jornadaActiva !== 'ambas' && config.jornadaActiva !== currentJourney) {
-    const respuestaFueraDeJornada = 'En este momento el bot está fuera de su jornada de atención. Un agente podrá responderte manualmente.';
-    await guardarResultadoQueue(queueId, 'fuera_de_jornada', respuestaFueraDeJornada);
-    await enviarRespuestaQueue(mensaje, respuestaFueraDeJornada);
-    await marcarMensajeProcesado(queueId, 'fuera_de_jornada');
-    return;
-  }
 
   // Determinar intención del usuario
   const contenidoLower = contenido.toLowerCase();

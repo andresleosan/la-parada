@@ -1,6 +1,6 @@
 // src/pages/BotConfigPage.tsx
 import React, { useState, useEffect, useRef } from 'react';
-import { AlertCircle, Bot, Save, MessageSquare, Power, Clock, ShieldCheck, RefreshCw } from 'lucide-react';
+import { AlertCircle, Bot, Save, MessageSquare, Power, ShieldCheck, RefreshCw } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Textarea } from '@/components/ui/Textarea';
@@ -8,7 +8,6 @@ import { Badge } from '@/components/ui/Badge';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { createToast } from '@/components/ui/Toast';
 import { getBotConfig, updateBotConfig } from '@/services/botConfigService';
-import type { Jornada } from '@/types';
 import { Timestamp } from 'firebase/firestore';
 import { useNegocio } from '@/context/NegocioContext';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -23,7 +22,6 @@ export function BotConfigPage() {
   const [activo, setActivo] = useState(false);
   const [mensajeBienvenida, setMensajeBienvenida] = useState('');
   const [mensajeCierre, setMensajeCierre] = useState('');
-  const [jornadaActiva, setJornadaActiva] = useState<Jornada>('ambas');
 
   const cargarConfig = async () => {
     const tenantId = negocioActual.id;
@@ -37,13 +35,11 @@ export function BotConfigPage() {
         setActivo(data.activo ?? false);
         setMensajeBienvenida(data.mensajeBienvenida || `¡Hola! Bienvenido a ${negocioActual.nombre}. ¿En qué podemos ayudarte hoy?`);
         setMensajeCierre(data.mensajeCierre || `Gracias por tu pedido en ${negocioActual.nombre}. ¡Hasta pronto!`);
-        setJornadaActiva(data.jornadaActiva || 'ambas');
       } else {
         // Defaults si no existe
         setActivo(false);
         setMensajeBienvenida(`¡Hola! Bienvenido a ${negocioActual.nombre}. ¿En qué podemos ayudarte hoy?`);
         setMensajeCierre(`Gracias por tu pedido en ${negocioActual.nombre}. ¡Hasta pronto!`);
-        setJornadaActiva('ambas');
       }
     } catch (err) {
       if (generation !== requestGenerationRef.current) return;
@@ -69,7 +65,6 @@ export function BotConfigPage() {
         activo,
         mensajeBienvenida,
         mensajeCierre,
-        jornadaActiva,
         ultimaActualizacion: Timestamp.now(),
       });
       createToast('Configuración del bot guardada', 'success');
@@ -185,31 +180,6 @@ export function BotConfigPage() {
 
         {/* Formulario */}
         <form onSubmit={handleGuardar} className="space-y-5">
-          <Card className="p-5 bg-neutral-900 border-neutral-800 space-y-4">
-            <h3 className="text-base font-bold text-white flex items-center gap-2">
-              <Clock className="h-5 w-5 text-gold-400" />
-              Jornada de Atención
-            </h3>
-            <p className="text-xs text-neutral-400">
-              Selecciona en qué jornadas el bot ofrece el menú y toma pedidos automáticamente.
-            </p>
-            <div className="flex gap-2">
-              {(['mañana', 'noche', 'ambas'] as const).map((j) => (
-                <Button
-                  key={j}
-                  type="button"
-                  onClick={() => setJornadaActiva(j)}
-                  aria-pressed={jornadaActiva === j}
-                  variant={jornadaActiva === j ? 'primary' : 'secondary'}
-                  size="sm"
-                  className="flex-1 capitalize"
-                >
-                  {j === 'mañana' ? 'Mañana/Tarde' : j === 'noche' ? 'Noche' : 'Ambas'}
-                </Button>
-              ))}
-            </div>
-          </Card>
-
           <Card className="p-5 bg-neutral-900 border-neutral-800 space-y-4">
             <h3 className="text-base font-bold text-white flex items-center gap-2">
               <MessageSquare className="h-5 w-5 text-gold-400" />

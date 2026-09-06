@@ -7,10 +7,6 @@ vi.mock('@/context/NegocioContext', () => ({
   useNegocio: () => ({ negocioActual: { id: 'laparada', nombre: 'La Parada' } }),
 }));
 
-vi.mock('@/context/JornadaContext', () => ({
-  useJornada: () => ({ jornadaActual: 'ambas' }),
-}));
-
 vi.mock('@/hooks/useCategorias', () => ({
   useCategorias: () => ({
     categorias: [{ id: 'categoria-1', nombre: 'Tequeños', icono: '🥟' }],
@@ -25,7 +21,6 @@ vi.mock('@/hooks/useProductos', () => ({
       nombre: 'Tequeño',
       categoria: 'Tequeños',
       precio: 3500,
-      jornada: 'ambas',
       disponible: true,
     } as Producto],
     combos: [],
@@ -111,10 +106,10 @@ type VentasPeriodFilterProps = {
 };
 
 describe('estado accesible de filtros administrativos', () => {
-  it('expone selección en tipo, jornada y categoría de Productos', () => {
+  it('expone selección en tipo y categoría de Productos', () => {
     const html = renderToStaticMarkup(<ProductosPage />);
 
-    expect(html.match(/aria-pressed="true"/g)).toHaveLength(3);
+    expect(html.match(/aria-pressed="true"/g)).toHaveLength(2);
     const pressedButtons = html.match(/<button[^>]*aria-pressed="true"[^>]*>[\s\S]*?<\/button>/g) ?? [];
     expect(pressedButtons.some((button) => button.includes('Productos (1)'))).toBe(true);
   });

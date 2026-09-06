@@ -17,24 +17,18 @@ import { requireTenantId } from '@/security/tenantScope';
 import { assertDeliveryTransition, getDeliverySaleId } from '@/utils/deliveryTransitions';
 
 /**
- * Obtener domicilios activos (no entregados) para una jornada específica
+ * Obtener domicilios activos (no entregados)
  */
-export async function getDomiciliosActivos(
-  jornada: 'mañana' | 'noche' | 'ambas',
-  negocioId: string
-): Promise<Domicilio[]> {
+export async function getDomiciliosActivos(negocioId: string): Promise<Domicilio[]> {
   try {
     const tenantId = requireTenantId(negocioId);
     const domsRef = collection(db, 'domicilios');
-    const constraints: any[] = [
+    const q = query(
+      domsRef,
       where('negocioId', '==', tenantId),
-      where('estado', 'in', ['pendiente', 'en_preparacion', 'en_camino'])
-    ];
-    if (jornada !== 'ambas') {
-      constraints.push(where('jornada', '==', jornada));
-    }
-    constraints.push(orderBy('creadoEn', 'desc'));
-    const q = query(domsRef, ...constraints);
+      where('estado', 'in', ['pendiente', 'en_preparacion', 'en_camino']),
+      orderBy('creadoEn', 'desc')
+    );
     const snapshot = await getDocs(q);
 
     return snapshot.docs.map((doc) => ({
@@ -51,26 +45,20 @@ export async function getDomiciliosActivos(
  * Obtener domicilios creados hoy cuyo estado actual ya es entregado.
  * No representa la fecha de entrega porque el modelo no almacena ese dato.
  */
-export async function getDomiciliosEntregados(
-  jornada: 'mañana' | 'noche' | 'ambas',
-  negocioId: string
-): Promise<Domicilio[]> {
+export async function getDomiciliosEntregados(negocioId: string): Promise<Domicilio[]> {
   try {
     const tenantId = requireTenantId(negocioId);
     const domsRef = collection(db, 'domicilios');
     const hoy = new Date();
     hoy.setHours(0, 0, 0, 0);
 
-    const constraints: any[] = [
+    const q = query(
+      domsRef,
       where('negocioId', '==', tenantId),
       where('estado', '==', 'entregado'),
-      where('creadoEn', '>=', Timestamp.fromDate(hoy))
-    ];
-    if (jornada !== 'ambas') {
-      constraints.push(where('jornada', '==', jornada));
-    }
-    constraints.push(orderBy('creadoEn', 'desc'));
-    const q = query(domsRef, ...constraints);
+      where('creadoEn', '>=', Timestamp.fromDate(hoy)),
+      orderBy('creadoEn', 'desc')
+    );
     const snapshot = await getDocs(q);
 
     return snapshot.docs.map((doc) => ({
@@ -145,21 +133,17 @@ export async function updateDomicilioEstado(
  * Se ejecuta cuando hay cambios en domicilios no entregados
  */
 export function onDomiciliosActivosChange(
-  jornada: 'mañana' | 'noche' | 'ambas',
   negocioId: string,
   callback: (domicilios: Domicilio[]) => void,
   onError?: (error: Error) => void
 ): () => void {
   const domsRef = collection(db, 'domicilios');
-  const constraints: any[] = [
+  const q = query(
+    domsRef,
     where('negocioId', '==', requireTenantId(negocioId)),
-    where('estado', 'in', ['pendiente', 'en_preparacion', 'en_camino'])
-  ];
-  if (jornada !== 'ambas') {
-    constraints.push(where('jornada', '==', jornada));
-  }
-  constraints.push(orderBy('creadoEn', 'desc'));
-  const q = query(domsRef, ...constraints);
+    where('estado', 'in', ['pendiente', 'en_preparacion', 'en_camino']),
+    orderBy('creadoEn', 'desc')
+  );
 
   return onSnapshot(
     q,
@@ -183,7 +167,6 @@ export function onDomiciliosActivosChange(
  * Útil para reproducir sonido cuando llega pedido nuevo
  */
 export function onNuevoDomicilio(
-  jornada: 'mañana' | 'noche' | 'ambas',
   negocioId: string,
   callback: (domicilio: Domicilio) => void
 ): () => void {
@@ -191,15 +174,12 @@ export function onNuevoDomicilio(
   const ahora = new Date();
   ahora.setSeconds(ahora.getSeconds() - 10); // últimos 10 segundos
 
-  const constraints: any[] = [
+  const q = query(
+    domsRef,
     where('negocioId', '==', requireTenantId(negocioId)),
     where('estado', '==', 'pendiente'),
     where('creadoEn', '>=', Timestamp.fromDate(ahora))
-  ];
-  if (jornada !== 'ambas') {
-    constraints.push(where('jornada', '==', jornada));
-  }
-  const q = query(domsRef, ...constraints);
+  );
 
   return onSnapshot(q, (snapshot) => {
     snapshot.docChanges().forEach((change: any) => {
@@ -248,7 +228,7 @@ export async function finalizarDomicilio(
           metodoPago: domicilio.metodoPago,
           tipoEntrega: 'domicilio',
           origen: domicilio.origen,
-          jornada: domicilio.jornada,
+          // Hora real en que se cerró la entrega.
           fecha: Timestamp.now(),
           domicilioId: domicilio.id,
           direccion: domicilio.direccion,
@@ -283,8 +263,7 @@ export async function crearDomicilioDesdePos(
   clienteApellido: string,
   clienteTelefono: string,
   direccion: string,
-  barrio: string,
-  jornada: 'mañana' | 'noche'
+  barrio: string
 ): Promise<string> {
   try {
     const tenantId = requireTenantId(negocioId);
@@ -300,7 +279,6 @@ export async function crearDomicilioDesdePos(
       metodoPago,
       origen: 'pos',
       estado: 'pendiente',
-      jornada,
       creadoEn: Timestamp.now(),
       actualizadoEn: Timestamp.now(),
     };

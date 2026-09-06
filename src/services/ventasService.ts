@@ -2,8 +2,7 @@
 import { collection, addDoc, Timestamp } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getBlob } from 'firebase/storage';
 import { db } from '@/services/firebase';
-import type { Venta, MetodoPago, Jornada, TipoEntrega } from '@/types';
-import { detectJornadaActual } from '@/utils/jornadaUtils';
+import type { Venta, MetodoPago, TipoEntrega } from '@/types';
 import { requireTenantId } from '@/security/tenantScope';
 
 /**
@@ -40,7 +39,6 @@ export async function registrarVenta(
   items: any[],
   total: number,
   metodoPago: MetodoPago,
-  jornada?: Jornada,
   direccion?: string,
   clienteTelefono?: string,
   fotoTransferenciaPath?: string,
@@ -54,7 +52,7 @@ export async function registrarVenta(
     metodoPago,
     tipoEntrega,
     origen: 'pos',
-    jornada: jornada || detectJornadaActual(),
+    // Timestamp.now() guarda fecha y hora exacta del cobro: es lo que lee el historial y la analítica.
     fecha: Timestamp.now(),
     ...(direccion && { direccion }),
     ...(clienteTelefono && { clienteTelefono }),
